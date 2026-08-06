@@ -1,0 +1,225 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="EXPLAIN Basics">
+  <h1>Understanding MySQL EXPLAIN</h1>
+
+  <p>
+    <code>EXPLAIN</code> is your window into how MySQL executes a query. It tells you which table is accessed first, what indexes are used (if any), how many rows are examined, and whether expensive operations like sorting or temporary tables occur. Mastering <code>EXPLAIN</code> is essential for diagnosing and fixing slow queries.
+  </p>
+
+  <h2>Running EXPLAIN</h2>
+
+  <p>The simplest form—prepend <code>EXPLAIN</code> to any <code>SELECT</code> query:</p>
+
+  <pre><code class="language-sql">EXPLAIN SELECT * FROM users WHERE id = 1;</code></pre>
+
+  <p>For a tabular view showing all columns including <code>Extra</code> details, use the default format (above). For JSON output with more granular information:</p>
+
+  <pre><code class="language-sql">EXPLAIN FORMAT=JSON SELECT * FROM users WHERE id = 1;</code></pre>
+
+  <p>To see actual runtime statistics (not just estimated rows/cost), use <code>EXPLAIN ANALYZE</code> (MySQL 8.0.18+; note: it *runs* the query):</p>
+
+  <pre><code class="language-sql">EXPLAIN ANALYZE SELECT * FROM users WHERE id = 1;</code></pre>
+
+  <div class="callout note">
+    <strong>Note:</strong> <code>EXPLAIN ANALYZE</code> executes the query, so use it carefully on large tables or expensive operations. For a quick estimate without execution, use plain <code>EXPLAIN</code>.
+  </div>
+
+  <h2>Column Reference</h2>
+
+  <p>Here's what each column in <code>EXPLAIN</code> output means:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Column</th>
+        <th>Meaning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>id</code></td>
+        <td>The sequential order in which <code>SELECT</code> parts are executed. Identical <code>id</code> values indicate tables accessed at the same level (join order within a single select). Higher <code>id</code> values execute first (nested queries).</td>
+      </tr>
+      <tr>
+        <td><code>select_type</code></td>
+        <td>Type of query: <code>SIMPLE</code> (single table), <code>PRIMARY</code> (outer query in subqueries), <code>SUBQUERY</code> (subquery), <code>DERIVED</code> (FROM subquery), <code>UNION</code>, <code>DEPENDENT SUBQUERY</code>, etc.</td>
+      </tr>
+      <tr>
+        <td><code>table</code></td>
+        <td>The table (or alias) being accessed in this row.</td>
+      </tr>
+      <tr>
+        <td><code>partitions</code></td>
+        <td>Which partition(s) are accessed (only if table is partitioned). <code>NULL</code> if not partitioned or all partitions are pruned.</td>
+      </tr>
+      <tr>
+        <td><code>type</code></td>
+        <td>The access method, ranked best → worst: <code>system</code>, <code>const</code>, <code>eq_ref</code>, <code>ref</code>, <code>fulltext</code>, <code>ref_or_null</code>, <code>index_merge</code>, <code>unique_subquery</code>, <code>index_subquery</code>, <code>range</code>, <code>index</code>, <code>ALL</code>. See access types below.</td>
+      </tr>
+      <tr>
+        <td><code>possible_keys</code></td>
+        <td>Indexes MySQL could use for this table. <code>NULL</code> if none available. This is advisory; the optimizer may choose a different index (or none).</td>
+      </tr>
+      <tr>
+        <td><code>key</code></td>
+        <td>The index actually used. <code>NULL</code> if no index was used (full table scan). Compare to <code>possible_keys</code> to spot missed opportunities.</td>
+      </tr>
+      <tr>
+        <td><code>key_len</code></td>
+        <td>The length (in bytes) of the key used. Shorter is usually better. Useful for composite indexes—tells you how many columns were used in the key.</td>
+      </tr>
+      <tr>
+        <td><code>ref</code></td>
+        <td>The column(s) used in the index lookup (or a constant, another table's column for joins, etc.).</td>
+      </tr>
+      <tr>
+        <td><code>rows</code></td>
+        <td>Estimated number of rows examined from this table. MySQL's estimate, not actual count. If this is large, it's a sign that indexes might not be used effectively or a table scan is happening.</td>
+      </tr>
+      <tr>
+        <td><code>filtered</code></td>
+        <td>Estimated percentage of rows that survive the <code>WHERE</code> clause for this table (after key lookup, any remaining filters applied). Lower = more rows examined but fewer returned.</td>
+      </tr>
+      <tr>
+        <td><code>Extra</code></td>
+        <td>Additional execution flags. See key flags below.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Access Types (<code>type</code> column)</h2>
+
+  <p>The <code>type</code> column shows how the table is accessed. Ranked from best to worst:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>system</code></td>
+        <td>The table has only one row (e.g., a constant table). Rarest case.</td>
+      </tr>
+      <tr>
+        <td><code>const</code></td>
+        <td>The table is accessed at most once via PRIMARY KEY or UNIQUE index with a constant value. Fastest possible lookup.</td>
+      </tr>
+      <tr>
+        <td><code>eq_ref</code></td>
+        <td>For each row from a previous table, exactly one row is read from this table via PRIMARY KEY or UNIQUE index (typically in joins). Very efficient.</td>
+      </tr>
+      <tr>
+        <td><code>ref</code></td>
+        <td>Multiple rows match a constant value via a non-unique index. Common and good for queries with indexed filter columns.</td>
+      </tr>
+      <tr>
+        <td><code>range</code></td>
+        <td>Rows are fetched within a range of index values (e.g., <code>WHERE id BETWEEN 10 AND 20</code> or <code>WHERE age > 30</code>). Efficient but less than constant/ref.</td>
+      </tr>
+      <tr>
+        <td><code>index</code></td>
+        <td>Full index scan (no key restriction; every index entry is examined). Better than <code>ALL</code> because index is smaller, but still slow for large indexes.</td>
+      </tr>
+      <tr>
+        <td><code>ALL</code></td>
+        <td>Full table scan (every row examined). Worst case. If <code>rows</code> is very large, this is a red flag for optimization.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Extra Column Flags</h2>
+
+  <p>The <code>Extra</code> column contains important clues about how the query is executed:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Flag</th>
+        <th>Meaning</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>Using where</code></td>
+        <td>A <code>WHERE</code> filter is applied after rows are fetched. Not inherently bad, but combined with <code>type: ALL</code>, it means every row is read and then filtered.</td>
+      </tr>
+      <tr>
+        <td><code>Using index</code></td>
+        <td>The query is satisfied entirely by reading the index (no need to fetch actual table rows). Called a "covering index." Excellent sign.</td>
+      </tr>
+      <tr>
+        <td><code>Using filesort</code></td>
+        <td>Rows are sorted in memory (or spilled to disk) instead of using an index. <code>ORDER BY</code> without an index causes this. Often slow for large result sets.</td>
+      </tr>
+      <tr>
+        <td><code>Using temporary</code></td>
+        <td>A temporary table is created to hold results (often for <code>DISTINCT</code>, <code>GROUP BY</code>, or <code>ORDER BY</code> combined with joins). Usually a performance concern.</td>
+      </tr>
+      <tr>
+        <td><code>Using join buffer</code></td>
+        <td>The join algorithm uses a buffer to read from one table before accessing the next. Occurs when the inner table lacks an index on the join condition.</td>
+      </tr>
+      <tr>
+        <td><code>Not exists</code></td>
+        <td>Used for <code>LEFT JOIN</code> optimization: once a match is found, no more rows are checked from the inner table.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Worked Example</h2>
+
+  <p>Let's say we have a <code>posts</code> table and run:</p>
+
+  <pre><code class="language-sql">EXPLAIN SELECT * FROM posts WHERE author_id = 5 ORDER BY created_at DESC;</code></pre>
+
+  <p>And we get:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>id</th>
+        <th>select_type</th>
+        <th>table</th>
+        <th>type</th>
+        <th>possible_keys</th>
+        <th>key</th>
+        <th>key_len</th>
+        <th>rows</th>
+        <th>Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>SIMPLE</td>
+        <td>posts</td>
+        <td>ref</td>
+        <td>idx_author_id</td>
+        <td>idx_author_id</td>
+        <td>8</td>
+        <td>42</td>
+        <td>Using filesort</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Analysis:</strong></p>
+  <ul>
+    <li>
+      <strong>Good:</strong> Using the <code>idx_author_id</code> index to find rows where <code>author_id = 5</code> (type: <code>ref</code>, only 42 rows to examine).
+    </li>
+    <li>
+      <strong>Bad:</strong> <code>Using filesort</code> means the rows are sorted by <code>created_at</code> in memory, not via an index. For this query to be optimal, we'd need a composite index like <code>idx_author_id_created DESC</code>.
+    </li>
+  </ul>
+
+  <div class="callout tip">
+    <strong>Tip:</strong> Always check for <code>Using filesort</code> and <code>Using temporary</code> in the <code>Extra</code> column. These are often the first optimization targets.
+  </div>
+</BaseLayout>

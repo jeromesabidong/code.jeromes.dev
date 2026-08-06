@@ -1,0 +1,221 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Indexes">
+  <h1>MySQL Indexes</h1>
+
+  <p>
+    Indexes are data structures that make row lookups and range scans fast. Without indexes, MySQL must scan every row in a table. Understanding how to create and use indexes is essential for query optimization.
+  </p>
+
+  <h2>How Indexes Work</h2>
+
+  <p>
+    An index is a sorted copy of selected columns, stored separately from the table data. MySQL's default index type is <strong>B-tree</strong>, which allows fast equality and range lookups.
+  </p>
+
+  <p>
+    For example, if you have 1 million rows and search for <code>WHERE id = 5000</code>:
+  </p>
+
+  <ul>
+    <li><strong>Without an index:</strong> MySQL must read all 1 million rows and check each one. This is called a <strong>full table scan</strong> or <code>type: ALL</code> in <code>EXPLAIN</code>.</li>
+    <li><strong>With an index on <code>id</code>:</strong> MySQL uses the B-tree to locate row 5000 in ~20 comparisons (log of 1M). Fast.</li>
+  </ul>
+
+  <h2>Index Types</h2>
+
+  <h3>Single-Column Index</h3>
+
+  <p>The simplest index: sort one column and allow fast lookups on that column.</p>
+
+  <pre><code class="language-sql">CREATE INDEX idx_email ON users(email);</code></pre>
+
+  <p>Now queries like <code>WHERE email = 'alice@example.com'</code> are fast (<code>type: ref</code>).</p>
+
+  <h3>Composite (Multi-Column) Index</h3>
+
+  <p>
+    An index on multiple columns is sorted first by column 1, then by column 2, and so on. This is powerful for queries that filter or sort by multiple columns.
+  </p>
+
+  <pre><code class="language-sql">CREATE INDEX idx_user_date ON orders(user_id, created_at);</code></pre>
+
+  <p>
+    This index helps both queries below:
+  </p>
+
+  <pre><code class="language-sql">-- Uses both columns of the index
+EXPLAIN SELECT * FROM orders WHERE user_id = 5 AND created_at > '2025-01-01';
+
+-- Uses only the first column (leftmost prefix rule)
+EXPLAIN SELECT * FROM orders WHERE user_id = 5;</code></pre>
+
+  <p>
+    But it does <strong>not</strong> help:
+  </p>
+
+  <pre><code class="language-sql">-- Does not use the index efficiently (skips user_id, jumps to created_at)
+EXPLAIN SELECT * FROM orders WHERE created_at > '2025-01-01';</code></pre>
+
+  <div class="callout note">
+    <strong>Leftmost Prefix Rule:</strong> A composite index can be used for lookups that start with the leftmost columns. <code>idx_user_date</code> helps <code>WHERE user_id = X</code>, but not <code>WHERE created_at = Y</code> alone.
+  </div>
+
+  <h3>Unique Index</h3>
+
+  <p>
+    Enforces that all values in the indexed column(s) are unique. Often used for business keys (email, username) that should have no duplicates.
+  </p>
+
+  <pre><code class="language-sql">CREATE UNIQUE INDEX idx_username ON users(username);</code></pre>
+
+  <p>
+    In addition to the fast lookup benefit, the database will reject any <code>INSERT</code> or <code>UPDATE</code> that violates uniqueness.
+  </p>
+
+  <h3>Covering Index</h3>
+
+  <p>
+    A covering index includes all columns needed by a query, so MySQL doesn't need to fetch the actual table rows. It can satisfy the entire query from the index alone.
+  </p>
+
+  <pre><code class="language-sql">-- Query: SELECT user_id, created_at FROM orders WHERE user_id = 5
+-- A covering index on (user_id, created_at) means we can read everything from the index
+CREATE INDEX idx_user_created ON orders(user_id, created_at);</code></pre>
+
+  <p>
+    In <code>EXPLAIN</code>, you'll see <code>Using index</code> in the <code>Extra</code> column—no need to access the main table.
+  </p>
+
+  <h3>Prefix Index (for Text Columns)</h3>
+
+  <p>
+    For <code>VARCHAR</code> or <code>TEXT</code> columns, you can index only the first N characters to save space:
+  </p>
+
+  <pre><code class="language-sql">-- Index only the first 10 characters of email
+CREATE INDEX idx_email_prefix ON users(email(10));</code></pre>
+
+  <p>
+    This is faster than indexing the entire email (less data to sort and compare) but is less selective (more collisions). Use when the prefix is distinctive enough.
+  </p>
+
+  <h2>Creating and Dropping Indexes</h2>
+
+  <h3>CREATE INDEX</h3>
+
+  <pre><code class="language-sql">CREATE INDEX idx_name ON table_name(column1, column2);</code></pre>
+
+  <h3>DROP INDEX</h3>
+
+  <pre><code class="language-sql">DROP INDEX idx_name ON table_name;</code></pre>
+
+  <h3>ALTER TABLE (alternative syntax)</h3>
+
+  <pre><code class="language-sql">ALTER TABLE table_name ADD INDEX idx_name(column1);
+ALTER TABLE table_name DROP INDEX idx_name;</code></pre>
+
+  <h3>Show Existing Indexes</h3>
+
+  <pre><code class="language-sql">SHOW INDEXES FROM table_name;</code></pre>
+
+  <h2>When the Optimizer Uses an Index</h2>
+
+  <p>The optimizer will use an index if:</p>
+
+  <ul>
+    <li>The index exists and is on a column used in the <code>WHERE</code>, <code>ORDER BY</code>, or <code>JOIN</code> condition.</li>
+    <li>The query doesn't violate one of the "pitfalls" (see Query Optimizer section: implicit type conversion, leading wildcard, function wrapping).</li>
+    <li>The optimizer estimates that using the index is cheaper than a full table scan (based on table size and index selectivity).</li>
+  </ul>
+
+  <p>
+    Sometimes, MySQL will choose <strong>not</strong> to use an index if the optimizer estimates a full table scan is faster. This typically happens when:
+  </p>
+
+  <ul>
+    <li>The table is very small (a few hundred rows).</li>
+    <li>The index is not selective (it doesn't filter out many rows).</li>
+  </ul>
+
+  <h2>How Index Choice Shows in EXPLAIN</h2>
+
+  <p>
+    The <code>EXPLAIN</code> columns <code>possible_keys</code>, <code>key</code>, and <code>key_len</code> tell you which index is used:
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Column</th>
+        <th>Meaning (in context of indexing)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>possible_keys</code></td>
+        <td>Which indexes could be used (advisory). <code>NULL</code> if no suitable index exists.</td>
+      </tr>
+      <tr>
+        <td><code>key</code></td>
+        <td>The index actually chosen. <code>NULL</code> if no index is used (full table scan).</td>
+      </tr>
+      <tr>
+        <td><code>key_len</code></td>
+        <td>The length of the key used, in bytes. For composite indexes, this tells you how many columns were used. If it's lower than expected, you might be hitting a limitation (e.g., leading wildcard).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Example:</p>
+
+  <pre><code class="language-sql">-- Composite index: idx_user_created(user_id: 8 bytes, created_at: 8 bytes)
+CREATE INDEX idx_user_created ON orders(user_id, created_at);
+
+-- Query 1: uses both columns
+EXPLAIN SELECT * FROM orders WHERE user_id = 5 AND created_at > '2025-01-01';
+-- key_len = 16 (both columns used)
+
+-- Query 2: uses only first column
+EXPLAIN SELECT * FROM orders WHERE user_id = 5;
+-- key_len = 8 (only user_id, because created_at is not in the WHERE clause)</code></pre>
+
+  <h2>Composite Index Design</h2>
+
+  <p>
+    When designing composite indexes, consider the order of columns. A good heuristic:
+  </p>
+
+  <ol>
+    <li><strong>Equality columns first:</strong> Columns used with <code>=</code> in the WHERE clause.</li>
+    <li><strong>Range columns second:</strong> Columns used with <code>&gt;, &lt;, BETWEEN</code>.</li>
+    <li><strong>Sort columns third:</strong> Columns used in <code>ORDER BY</code> (if needed).</li>
+  </ol>
+
+  <p>Example:</p>
+
+  <pre><code class="language-sql">-- Typical query: WHERE user_id = X AND status = 'active' ORDER BY created_at DESC
+-- Good composite index (equality first, sort second):
+CREATE INDEX idx_user_status_date ON orders(user_id, status, created_at);</code></pre>
+
+  <div class="callout tip">
+    <strong>Tip:</strong> Don't create too many indexes. Each index uses disk space and slows down <code>INSERT</code>, <code>UPDATE</code>, and <code>DELETE</code> operations. Create indexes for your most common queries, then measure and verify they help before adding more.
+  </div>
+
+  <h2>Full-Text Indexes</h2>
+
+  <p>
+    For full-text search (e.g., searching a blog post body for keywords), use a full-text index:
+  </p>
+
+  <pre><code class="language-sql">CREATE FULLTEXT INDEX idx_body_ft ON posts(body);
+
+-- Query with full-text search
+SELECT * FROM posts WHERE MATCH(body) AGAINST('mysql' IN BOOLEAN MODE);</code></pre>
+
+  <p>
+    Full-text indexes are optimized for keyword search and are much faster than <code>LIKE '%keyword%'</code> on large text columns.
+  </p>
+</BaseLayout>

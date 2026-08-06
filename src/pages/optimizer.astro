@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Query Optimizer">
+  <h1>MySQL Query Optimizer</h1>
+
+  <p>
+    MySQL's query optimizer is a cost-based system that evaluates multiple possible execution plans and picks the one it estimates will be fastest. Understanding how it works—and its limitations—is key to writing queries that the optimizer can efficiently execute.
+  </p>
+
+  <h2>How the Optimizer Works</h2>
+
+  <p>When you submit a query, the optimizer:</p>
+
+  <ol>
+    <li>Parses the query syntax.</li>
+    <li>Checks which indexes are available on the tables involved.</li>
+    <li>Estimates the cost of multiple execution plans (e.g., which table to scan first, which indexes to use, which join order is cheapest).</li>
+    <li>Picks the plan with the lowest estimated cost.</li>
+    <li>Executes that plan.</li>
+  </ol>
+
+  <p>
+    The key word is <strong>estimate</strong>. The optimizer uses statistics about table size and index cardinality (how many distinct values exist in an index) to guess which plan will be fastest. These estimates are often accurate, but not always.
+  </p>
+
+  <h2>Common Optimizer Pitfalls</h2>
+
+  <p>Several patterns cause the optimizer to make poor choices. Here's how to spot and fix them using <code>EXPLAIN</code>:</p>
+
+  <h3>1. Implicit Type Conversion</h3>
+
+  <p>
+    If a column is a numeric type (e.g., <code>INT</code>) but you search it with a string, MySQL converts the column to a string, disabling index use:
+  </p>
+
+  <pre><code class="language-sql">-- User ID is INT, but we search with a string
+EXPLAIN SELECT * FROM users WHERE id = '123';</code></pre>
+
+  <p>
+    In <code>EXPLAIN</code>, you'll see <code>type: ALL</code> (full scan). The fix: use the correct type:
+  </p>
+
+  <pre><code class="language-sql">-- Correct: numeric comparison
+EXPLAIN SELECT * FROM users WHERE id = 123;</code></pre>
+
+  <div class="callout warning">
+    <strong>Why it happens:</strong> To safely compare different types, MySQL must convert all values to a common type. Converting a column (via a function call) means the index cannot be used. Always type-match your comparisons.
+  </div>
+
+  <h3>2. Leading Wildcard LIKE</h3>
+
+  <p>
+    A <code>LIKE</code> pattern starting with <code>%</code> cannot use a B-tree index efficiently:
+  </p>
+
+  <pre><code class="language-sql">-- Bad: leading wildcard disables index
+EXPLAIN SELECT * FROM users WHERE email LIKE '%@example.com';</code></pre>
+
+  <p>
+    You'll see <code>type: ALL</code>. The fix: if possible, avoid the pattern. If you must search by suffix, consider full-text search or a different column design.
+  </p>
+
+  <pre><code class="language-sql">-- Better: no leading wildcard
+EXPLAIN SELECT * FROM users WHERE email LIKE 'admin%';</code></pre>
+
+  <h3>3. OR Conditions with Non-Indexed Columns</h3>
+
+  <p>
+    If you use <code>OR</code> and one side is not indexed, MySQL often reverts to a full table scan:
+  </p>
+
+  <pre><code class="language-sql">-- If 'metadata' has no index, the optimizer may scan the whole table
+EXPLAIN SELECT * FROM posts WHERE author_id = 5 OR metadata LIKE '%draft%';</code></pre>
+
+  <p>
+    In <code>EXPLAIN</code>, look for <code>type: ALL</code> or <code>index_merge</code> (which is slower than you'd like). The fix: either index the <code>metadata</code> column or rewrite the query if possible.
+  </p>
+
+  <h3>4. Functions on Indexed Columns</h3>
+
+  <p>
+    Wrapping an indexed column in a function disables the index:
+  </p>
+
+  <pre><code class="language-sql">-- Bad: YEAR() function prevents index use
+EXPLAIN SELECT * FROM events WHERE YEAR(event_date) = 2025;</code></pre>
+
+  <p>
+    You'll see <code>type: ALL</code>. The fix: push the function to the other side of the comparison:
+  </p>
+
+  <pre><code class="language-sql">-- Better: comparison avoids function on column
+EXPLAIN SELECT * FROM events
+  WHERE event_date >= '2025-01-01'
+    AND event_date < '2026-01-01';</code></pre>
+
+  <h3>5. Selective Subqueries in WHERE Clause</h3>
+
+  <p>
+    Subqueries in the <code>WHERE</code> clause (especially with <code>IN</code>) are executed repeatedly and can be slow:
+  </p>
+
+  <pre><code class="language-sql">-- Subquery in WHERE can be slow (executed per row)
+EXPLAIN SELECT * FROM orders WHERE user_id IN (
+  SELECT id FROM users WHERE country = 'US'
+);</code></pre>
+
+  <p>
+    In <code>EXPLAIN</code>, you'll see <code>select_type: DEPENDENT SUBQUERY</code>. Consider rewriting as a <code>JOIN</code> (more efficient):
+  </p>
+
+  <pre><code class="language-sql">-- Better: join is usually faster
+EXPLAIN SELECT DISTINCT o.* FROM orders o
+  JOIN users u ON o.user_id = u.id
+  WHERE u.country = 'US';</code></pre>
+
+  <h2>Using EXPLAIN to Diagnose Issues</h2>
+
+  <p>
+    When a query is slow, use <code>EXPLAIN</code> to spot the problem. Look for:
+  </p>
+
+  <ul>
+    <li>
+      <strong><code>type: ALL</code>:</strong> Full table scan. Consider adding an index on the <code>WHERE</code> column.
+    </li>
+    <li>
+      <strong><code>Using filesort</code>:</strong> Sorting in memory, not via index. Add a composite index that covers the <code>ORDER BY</code> clause.
+    </li>
+    <li>
+      <strong><code>Using temporary</code>:</strong> Temporary table created (usually for <code>GROUP BY</code> or <code>DISTINCT</code>). Consider indexes or query rewrite.
+    </li>
+    <li>
+      <strong><code>rows</code> is very high:</strong> The optimizer is examining many rows. Check if the indexed column is selective enough or if the filter is correct.
+    </li>
+    <li>
+      <strong><code>key: NULL</code>:</strong> No index is used. Verify that an index exists and that the query doesn't violate one of the pitfalls above.
+    </li>
+  </ul>
+
+  <h2>Before & After Comparison</h2>
+
+  <p>
+    Always run <code>EXPLAIN</code> before and after making a change to confirm the fix actually helped. Example:
+  </p>
+
+  <p><strong>Before adding an index:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>type</th>
+        <th>key</th>
+        <th>rows</th>
+        <th>Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ALL</td>
+        <td>NULL</td>
+        <td>1000000</td>
+        <td>Using where</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>After adding <code>CREATE INDEX idx_user_created ON orders(user_id, created_at)</code>:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>type</th>
+        <th>key</th>
+        <th>rows</th>
+        <th>Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ref</td>
+        <td>idx_user_created</td>
+        <td>42</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Much better: from scanning 1M rows to only checking 42. This is a typical optimization win.
+  </p>
+
+  <div class="callout tip">
+    <strong>Pro Tip:</strong> Use <code>EXPLAIN ANALYZE</code> (MySQL 8.0.18+) to see actual row counts at runtime. If the estimated <code>rows</code> in <code>EXPLAIN</code> is way off, you may have stale statistics. Try <code>ANALYZE TABLE</code> to refresh them.
+  </div>
+</BaseLayout>

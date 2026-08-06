@@ -1,0 +1,284 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Practice">
+  <h1>Step-by-Step Query Optimization</h1>
+
+  <p>
+    Let's work through a real optimization scenario. You'll see a slow query, diagnose it with <code>EXPLAIN</code>, apply a fix, and verify the improvement.
+  </p>
+
+  <h2>The Scenario</h2>
+
+  <p>
+    You maintain a social media app with a <code>posts</code> table (1M rows) and a <code>users</code> table (100k rows). A user reports that the "user activity feed" page is slow. The feature shows all posts by a specific user, most recent first.
+  </p>
+
+  <div class="step">
+    <div class="step-number">Step 1: The Slow Query</div>
+    <p>Here's the query that powers the feature:</p>
+    <pre><code class="language-sql">SELECT id, user_id, title, body, created_at
+FROM posts
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;</code></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 2: Diagnose with EXPLAIN</div>
+    <p>Let's see what <code>EXPLAIN</code> shows:</p>
+    <pre><code class="language-sql">EXPLAIN SELECT id, user_id, title, body, created_at
+FROM posts
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;</code></pre>
+    <p>Output:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>select_type</th>
+          <th>table</th>
+          <th>type</th>
+          <th>key</th>
+          <th>rows</th>
+          <th>Extra</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>SIMPLE</td>
+          <td>posts</td>
+          <td>ALL</td>
+          <td>NULL</td>
+          <td>1000000</td>
+          <td>Using where; Using filesort</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 3: Identify the Problems</div>
+    <p><strong>Problem 1: Full table scan</strong></p>
+    <ul>
+      <li><code>type: ALL</code> means every row in the <code>posts</code> table (1M rows) is examined.</li>
+      <li>Even though we only want 20 rows, MySQL scans all 1M before filtering by <code>user_id = 42</code>.</li>
+    </ul>
+
+    <p><strong>Problem 2: Sorting in memory</strong></p>
+    <ul>
+      <li><code>Using filesort</code> means MySQL sorts the results after fetching them from the table.</li>
+      <li>For 1M rows, this is expensive (memory allocation and CPU).</li>
+    </ul>
+
+    <div class="callout warning">
+      <strong>The Root Cause:</strong> No index on <code>user_id</code>, and no index covering both <code>user_id</code> and <code>created_at</code> in the right order for sorting.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 4: The Fix</div>
+    <p>
+      Create a composite index on <code>(user_id, created_at DESC)</code>. This index is sorted first by <code>user_id</code>, then by <code>created_at</code> in descending order. Now:
+    </p>
+    <ul>
+      <li>MySQL can quickly find all posts for <code>user_id = 42</code> using the index.</li>
+      <li>Within that user's posts, they're already sorted by <code>created_at DESC</code> (no need to sort).</li>
+      <li>MySQL can fetch the first 20 without sorting the entire result set.</li>
+    </ul>
+
+    <pre><code class="language-sql">CREATE INDEX idx_user_created_desc ON posts(user_id, created_at DESC);</code></pre>
+
+    <div class="callout note">
+      <strong>Syntax Note:</strong> The <code>DESC</code> keyword in the index definition tells MySQL to store <code>created_at</code> in descending order, matching the query's <code>ORDER BY created_at DESC</code>.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 5: Verify the Fix</div>
+    <p>Run <code>EXPLAIN</code> again on the same query:</p>
+    <pre><code class="language-sql">EXPLAIN SELECT id, user_id, title, body, created_at
+FROM posts
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;</code></pre>
+    <p>New output:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>select_type</th>
+          <th>table</th>
+          <th>type</th>
+          <th>key</th>
+          <th>rows</th>
+          <th>Extra</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>SIMPLE</td>
+          <td>posts</td>
+          <td>ref</td>
+          <td>idx_user_created_desc</td>
+          <td>25</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Comparison:</strong></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Before</th>
+          <th>After</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Type</td>
+          <td>ALL (full scan)</td>
+          <td>ref (index lookup)</td>
+        </tr>
+        <tr>
+          <td>Rows examined</td>
+          <td>1,000,000</td>
+          <td>~25</td>
+        </tr>
+        <tr>
+          <td>Filesort?</td>
+          <td>Yes</td>
+          <td>No</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 6: Takeaway</div>
+    <p>
+      <strong>What we learned:</strong>
+    </p>
+    <ul>
+      <li>A composite index on <code>(filter_column, sort_column)</code> can eliminate both full table scans and filesort operations.</li>
+      <li>Always check <code>EXPLAIN</code> for <code>type: ALL</code> and <code>Using filesort</code>—these are usually red flags.</li>
+      <li>A small, well-targeted index can reduce rows examined from 1M to ~25, making a query orders of magnitude faster.</li>
+      <li><code>DESC</code> in index definitions helps when queries sort descending on that column.</li>
+    </ul>
+
+    <div class="callout tip">
+      <strong>Further optimization:</strong> If you only need <code>id, user_id, title, created_at</code> and not the full <code>body</code>, you could add all these columns to the index (covering index) so MySQL doesn't need to fetch the table at all. See the Indexes page for more on covering indexes.
+    </div>
+  </div>
+
+  <h2>Another Example: JOIN Query</h2>
+
+  <div class="step">
+    <div class="step-number">Step 1: The Query</div>
+    <p>
+      Now you want to show each post along with the author's name:
+    </p>
+    <pre><code class="language-sql">SELECT p.id, p.title, u.name
+FROM posts p
+JOIN users u ON p.user_id = u.id
+WHERE p.created_at >= '2025-01-01'
+ORDER BY p.created_at DESC
+LIMIT 20;</code></pre>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 2: EXPLAIN Output (Without Indexes)</div>
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>table</th>
+          <th>type</th>
+          <th>key</th>
+          <th>rows</th>
+          <th>Extra</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>posts</td>
+          <td>ALL</td>
+          <td>NULL</td>
+          <td>1000000</td>
+          <td>Using where; Using filesort</td>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td>users</td>
+          <td>ALL</td>
+          <td>NULL</td>
+          <td>100000</td>
+          <td>Using where; Using join buffer</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Problems: Full scans on both tables, sorting, and join buffer (slow join algorithm).
+    </p>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 3: Indexes</div>
+    <p>Add indexes for the join condition and filtering:</p>
+    <pre><code class="language-sql">-- Index on posts for WHERE and ORDER BY
+CREATE INDEX idx_posts_created ON posts(created_at DESC);
+
+-- Index on users for the JOIN condition
+CREATE INDEX idx_users_id ON users(id);</code></pre>
+
+    <p>
+      (Note: <code>PRIMARY KEY</code> on <code>users.id</code> likely already exists, so the second index is redundant. But the first index helps significantly.)
+    </p>
+  </div>
+
+  <div class="step">
+    <div class="step-number">Step 4: EXPLAIN After Indexes</div>
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>table</th>
+          <th>type</th>
+          <th>key</th>
+          <th>rows</th>
+          <th>Extra</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>posts</td>
+          <td>range</td>
+          <td>idx_posts_created</td>
+          <td>50000</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td>1</td>
+          <td>users</td>
+          <td>const</td>
+          <td>PRIMARY</td>
+          <td>1</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>
+      Much better: posts now use a range scan on the index (filtering by date), and users are looked up via primary key (constant time, once per post row). No filesort, no join buffer.
+    </p>
+  </div>
+</BaseLayout>

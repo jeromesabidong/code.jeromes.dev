@@ -1,0 +1,13 @@
+---
+const pathname = new URL(Astro.request.url).pathname;
+---
+
+<nav>
+  <ul>
+    <li><a href="/" class={pathname === '/' ? 'active' : ''}>Home</a></li>
+    <li><a href="/explain" class={pathname === '/explain/' ? 'active' : ''}>EXPLAIN Basics</a></li>
+    <li><a href="/optimizer" class={pathname === '/optimizer/' ? 'active' : ''}>Query Optimizer</a></li>
+    <li><a href="/indexes" class={pathname === '/indexes/' ? 'active' : ''}>Indexes</a></li>
+    <li><a href="/practice" class={pathname === '/practice/' ? 'active' : ''}>Practice</a></li>
+  </ul>
+</nav>
