@@ -2,35 +2,62 @@
 ---
 
 <button
-  id="dark-toggle"
-  class="p-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+  id="theme-toggle"
+  class="theme-toggle p-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
   aria-label="Toggle dark mode"
+  aria-pressed="false"
 >
-  <svg class="w-5 h-5 sun-icon hidden dark:block" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+  <svg class="sun-icon w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 24 24">
+    <!-- Sun circle -->
+    <circle cx="12" cy="12" r="4" fill="currentColor"/>
+    <!-- Top ray -->
+    <rect x="11" y="1" width="2" height="3" rx="1" fill="currentColor"/>
+    <!-- Bottom ray -->
+    <rect x="11" y="20" width="2" height="3" rx="1" fill="currentColor"/>
+    <!-- Left ray -->
+    <rect x="1" y="11" width="3" height="2" rx="1" fill="currentColor"/>
+    <!-- Right ray -->
+    <rect x="20" y="11" width="3" height="2" rx="1" fill="currentColor"/>
+    <!-- Top-left ray -->
+    <line x1="4.5" y1="4.5" x2="6.5" y2="2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Top-right ray -->
+    <line x1="19.5" y1="4.5" x2="17.5" y2="2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Bottom-left ray -->
+    <line x1="4.5" y1="19.5" x2="6.5" y2="21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Bottom-right ray -->
+    <line x1="19.5" y1="19.5" x2="17.5" y2="21.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
   </svg>
-  <svg class="w-5 h-5 moon-icon block dark:hidden" fill="currentColor" viewBox="0 0 24 24">
+  <svg class="moon-icon w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 24 24">
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
   </svg>
 </button>
 
 <script>
-  const btn = document.getElementById('dark-toggle');
-  const htmlElement = document.documentElement;
+  function initTheme() {
+    const html = document.documentElement;
+    const storedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = storedTheme === 'dark' || (!storedTheme && prefersDark);
 
-  function setDarkMode(isDark) {
     if (isDark) {
-      htmlElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      htmlElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
+      html.classList.add('dark');
+    }
+
+    const toggleBtn = document.getElementById('theme-toggle');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-pressed', isDark.toString());
+      toggleBtn.addEventListener('click', () => {
+        html.classList.toggle('dark');
+        const newIsDark = html.classList.contains('dark');
+        localStorage.setItem('theme', newIsDark ? 'dark' : 'light');
+        toggleBtn.setAttribute('aria-pressed', newIsDark.toString());
+      });
     }
   }
 
-  // Toggle on button click
-  btn?.addEventListener('click', () => {
-    const isDark = htmlElement.classList.contains('dark');
-    setDarkMode(!isDark);
-  });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTheme);
+  } else {
+    initTheme();
+  }
 </script>

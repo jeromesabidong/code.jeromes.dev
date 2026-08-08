@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   h1 {
     @apply text-4xl font-bold mb-6 mt-0 font-mono;
@@ -113,88 +115,32 @@ html {
   scroll-behavior: smooth;
 }
 
-body {
-  @apply transition-colors duration-300;
-}
-
-/* Dark mode styles for .dark class */
-.dark {
+html.dark {
   color-scheme: dark;
 }
 
-.dark body {
+body {
+  @apply bg-white;
+}
+
+/* Explicit dark mode styles */
+html.dark body {
   @apply bg-slate-950 text-gray-100;
 }
 
-.dark h2 {
-  @apply border-gray-700;
+html.dark main {
+  @apply bg-slate-950;
 }
 
-.dark a {
+html.dark {
+  @apply bg-slate-950;
+}
+
+/* Ensure sidebar dark mode styling */
+html.dark aside {
+  @apply bg-slate-900 border-gray-700;
+}
+
+html.dark aside a {
   @apply text-blue-400;
-}
-
-.dark code {
-  @apply bg-gray-800;
-}
-
-.dark pre {
-  @apply bg-gray-900 border-gray-700;
-}
-
-.dark table th,
-.dark table td {
-  @apply border-gray-700;
-}
-
-.dark table th {
-  @apply bg-gray-800;
-}
-
-.dark table tr:nth-child(even) {
-  @apply bg-gray-900;
-}
-
-.dark .callout {
-  @apply border-blue-400 bg-gray-800;
-}
-
-.dark .callout.tip {
-  @apply border-green-400;
-}
-
-.dark .callout.warning {
-  @apply border-yellow-400;
-}
-
-.dark .callout.note {
-  @apply border-blue-400;
-}
-
-.dark .landing-card {
-  @apply border-gray-700 bg-gray-800;
-}
-
-.dark .landing-card p {
-  @apply text-gray-400;
-}
-
-.dark .badge {
-  @apply bg-amber-900 text-amber-200;
-}
-
-.dark .step {
-  @apply border-gray-700 bg-gray-800;
-}
-
-.dark .step-number {
-  @apply text-blue-300;
-}
-
-.dark .dark\:block {
-  display: block;
-}
-
-.dark .dark\:hidden {
-  display: none;
 }

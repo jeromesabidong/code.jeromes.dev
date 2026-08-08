@@ -1,0 +1,208 @@
+---
+import { CATEGORY_LABELS } from '../lib/categories';
+
+const pathname = new URL(Astro.request.url).pathname;
+
+const categories = [
+  { key: 'backend', label: CATEGORY_LABELS.backend, subpages: [] },
+  { key: 'infrastructure', label: CATEGORY_LABELS.infrastructure, subpages: [] },
+  {
+    key: 'database',
+    label: CATEGORY_LABELS.database,
+    subpages: [
+      { slug: 'mysql-explain', title: 'MySQL EXPLAIN', href: '/database/mysql-explain' }
+    ]
+  },
+  { key: 'frontend', label: CATEGORY_LABELS.frontend, subpages: [] },
+  { key: 'leadership', label: CATEGORY_LABELS.leadership, subpages: [] },
+  { key: 'others', label: CATEGORY_LABELS.others, subpages: [] },
+];
+
+const isSubpageActive = (subpage: any) => pathname === subpage.href;
+const isCategoryActive = (category: any) =>
+  pathname === `/${category.key}` ||
+  (pathname.startsWith(`/${category.key}/`) && category.key !== 'database') ||
+  category.subpages.some(sp => isSubpageActive(sp));
+---
+
+<div class="category-nav">
+  {categories.map((category) => (
+    <div
+      class={`nav-category ${category.subpages.length === 0 ? 'no-subpages' : 'collapsed'}`}
+      data-category={category.key}
+    >
+      {category.subpages.length > 0 ? (
+        <>
+          <div class="nav-category-header">
+            <svg class="nav-category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            <span>{category.label}</span>
+          </div>
+          <ul class="nav-sublist">
+            {category.subpages.map((subpage) => (
+              <li class={`nav-subitem ${isSubpageActive(subpage) ? 'active' : ''}`}>
+                <a href={subpage.href}>{subpage.title}</a>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <a href={`/${category.key}`} class={`nav-category-link ${isCategoryActive(category) ? 'active' : ''}`}>
+          {category.label}
+        </a>
+      )}
+    </div>
+  ))}
+</div>
+
+<style>
+  .category-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .nav-category {
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-category.no-subpages .nav-category-link {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #4b5563;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    margin: 0 0.5rem;
+    font-weight: 500;
+  }
+
+  html.dark .nav-category.no-subpages .nav-category-link {
+    color: #a0aec0;
+  }
+
+  .nav-category.no-subpages .nav-category-link:hover {
+    background: #dbeafe;
+    color: #1f2937;
+  }
+
+  html.dark .nav-category.no-subpages .nav-category-link:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+
+  .nav-category.no-subpages .nav-category-link.active {
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+  }
+
+  .nav-category-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    color: #4b5563;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 6px;
+    margin: 0 0.5rem;
+  }
+
+  html.dark .nav-category-header {
+    color: #a0aec0;
+  }
+
+  .nav-category-header:hover {
+    background: #dbeafe;
+    color: #1f2937;
+  }
+
+  html.dark .nav-category-header:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+
+  .nav-category-chevron {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .nav-category.collapsed .nav-category-chevron {
+    transform: rotate(0deg);
+  }
+
+  .nav-category:not(.collapsed) .nav-category-chevron {
+    transform: rotate(90deg);
+  }
+
+  .nav-category.collapsed .nav-sublist {
+    display: none;
+  }
+
+  .nav-sublist {
+    list-style: none;
+    margin: 0.25rem 0;
+  }
+
+  .nav-subitem a {
+    display: block;
+    padding: 0.6rem 1rem 0.6rem 2.2rem;
+    color: #6b7280;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    border-left: 2px solid transparent;
+    margin: 0 0.5rem 0 0;
+    border-radius: 4px;
+  }
+
+  html.dark .nav-subitem a {
+    color: #9ca3af;
+  }
+
+  .nav-subitem a:hover {
+    background: #dbeafe;
+    color: #1f2937;
+    border-left-color: #4299e1;
+  }
+
+  html.dark .nav-subitem a:hover {
+    background: #334155;
+    color: #cbd5e0;
+    border-left-color: #4299e1;
+  }
+
+  .nav-subitem.active a {
+    background: #dbeafe;
+    color: #4299e1;
+    border-left-color: #4299e1;
+    font-weight: 600;
+  }
+
+  html.dark .nav-subitem.active a {
+    background: #334155;
+    color: #63b3ed;
+    border-left-color: #4299e1;
+  }
+</style>
+
+<script>
+  document.querySelectorAll('.nav-category-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const category = header.closest('.nav-category');
+      if (category) {
+        category.classList.toggle('collapsed');
+      }
+    });
+  });
+</script>

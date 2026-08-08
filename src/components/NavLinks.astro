@@ -1,0 +1,27 @@
+---
+import { CATEGORY_LABELS } from '../lib/categories';
+
+const pathname = new URL(Astro.request.url).pathname;
+
+const navItems = Object.entries(CATEGORY_LABELS).map(([key, label]) => ({
+  href: `/${key}`,
+  label,
+}));
+---
+
+<ul class="flex flex-col gap-1">
+  {navItems.map((item) => (
+    <li>
+      <a
+        href={item.href}
+        class={`block font-mono text-sm font-medium px-3 py-2 rounded transition-colors ${
+          pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+            ? 'bg-blue-500/20 dark:bg-blue-500/30 text-blue-700 dark:text-blue-300'
+            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-400/10 dark:hover:bg-gray-400/10'
+        }`}
+      >
+        {item.label}
+      </a>
+    </li>
+  ))}
+</ul>

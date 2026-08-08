@@ -1,0 +1,85 @@
+---
+import CategoryNav from './CategoryNav.astro';
+import DarkModeToggle from './DarkModeToggle.astro';
+import { SITE_TITLE } from '../lib/site';
+---
+
+<div class="flex md:hidden sticky top-0 z-40 items-center justify-between px-4 py-3 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900">
+  <a href="/" class="font-mono text-lg font-bold text-gray-900 dark:text-gray-100 hover:opacity-75 transition-opacity">
+    {SITE_TITLE}
+  </a>
+  <button
+    id="mobile-menu-open"
+    aria-label="Open menu"
+    aria-expanded="false"
+    class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-colors"
+  >
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+</div>
+
+<div id="mobile-backdrop" class="hidden md:hidden fixed inset-0 z-40 bg-black/50"></div>
+
+<aside id="mobile-drawer" class="md:hidden fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] flex flex-col overflow-y-auto bg-white dark:bg-slate-900 border-r border-gray-300 dark:border-gray-700 transform translate-x-full transition-transform duration-200 ease-in-out pointer-events-none">
+  <div class="flex items-center justify-between px-6 py-6 border-b border-gray-300 dark:border-gray-700">
+    <a href="/" class="font-mono text-xl font-bold text-gray-900 dark:text-gray-100">
+      {SITE_TITLE}
+    </a>
+    <button
+      id="mobile-menu-close"
+      aria-label="Close menu"
+      class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded transition-colors"
+    >
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+  <div class="flex-1 px-4 py-4">
+    <CategoryNav />
+  </div>
+  <div class="border-t border-gray-300 dark:border-gray-700 px-4 py-4 flex justify-center">
+    <DarkModeToggle />
+  </div>
+</aside>
+
+<script>
+  const openBtn = document.getElementById('mobile-menu-open');
+  const closeBtn = document.getElementById('mobile-menu-close');
+  const backdrop = document.getElementById('mobile-backdrop');
+  const drawer = document.getElementById('mobile-drawer');
+
+  function openDrawer() {
+    drawer?.classList.remove('translate-x-full');
+    drawer?.classList.remove('pointer-events-none');
+    backdrop?.classList.remove('hidden');
+    openBtn?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('overflow-hidden');
+  }
+
+  function closeDrawer() {
+    drawer?.classList.add('translate-x-full');
+    drawer?.classList.add('pointer-events-none');
+    backdrop?.classList.add('hidden');
+    openBtn?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('overflow-hidden');
+  }
+
+  openBtn?.addEventListener('click', openDrawer);
+  closeBtn?.addEventListener('click', closeDrawer);
+  backdrop?.addEventListener('click', closeDrawer);
+
+  drawer?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) {
+      closeDrawer();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !drawer?.classList.contains('translate-x-full')) {
+      closeDrawer();
+    }
+  });
+</script>
