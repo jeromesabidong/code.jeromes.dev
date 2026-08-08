@@ -1,8 +1,9 @@
 import { defineCollection, z } from 'astro:content';
-import { CATEGORIES } from '../lib/categories';
+import { glob } from 'astro/loaders';
+import { CATEGORIES } from './lib/categories';
 
 const notes = defineCollection({
-  type: 'content',
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/notes' }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
