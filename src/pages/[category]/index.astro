@@ -1,0 +1,43 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import NoteCard from '../../components/NoteCard.astro';
+import { CATEGORIES, CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '../../lib/categories';
+import { getNotesByCategory } from '../../lib/notes';
+
+export async function getStaticPaths() {
+  return CATEGORIES.map((category) => ({
+    params: { category },
+  }));
+}
+
+const { category } = Astro.params;
+const categoryLabel = CATEGORY_LABELS[category as any];
+const categoryDescription = CATEGORY_DESCRIPTIONS[category as any];
+const notes = await getNotesByCategory(category as any);
+---
+
+<BaseLayout title={categoryLabel} description={categoryDescription}>
+  <h1>{categoryLabel}</h1>
+  <p>{categoryDescription}</p>
+
+  {notes.length > 0 ? (
+    <div class="landing-grid">
+      {notes.map((note) => (
+        <NoteCard
+          title={note.title}
+          description={note.description}
+          date={note.date}
+          tags={note.tags}
+          href={note.href}
+          type={note.type}
+        />
+      ))}
+    </div>
+  ) : (
+    <div class="text-center py-12">
+      <p class="text-gray-500 dark:text-gray-400">
+        No notes in this category yet. Check back soon!
+      </p>
+    </div>
+  )}
+</BaseLayout>

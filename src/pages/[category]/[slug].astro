@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes', ({ data }) => !data.draft);
+
+  return notes.map((entry) => ({
+    params: {
+      category: entry.data.category,
+      slug: entry.slug.split('/')[1], // Extract slug from "category/slug"
+    },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: any;
+}
+
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+const { title, description } = entry.data;
+---
+
+<BaseLayout title={title} description={description}>
+  <article>
+    <h1>{title}</h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-8">{description}</p>
+    <Content />
+  </article>
+</BaseLayout>

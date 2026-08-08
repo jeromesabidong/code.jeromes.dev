@@ -1,0 +1,169 @@
+---
+import MysqlExplainLayout from '../../../layouts/MysqlExplainLayout.astro';
+---
+
+<MysqlExplainLayout title="Query Optimizer">
+  <h1>MySQL Query Optimizer</h1>
+
+  <p>
+    MySQL has to figure out how to run your query. It tries different ways and picks the fastest one (or at least, what it thinks will be fastest). Let's understand how it thinks so you can write queries it actually likes.
+  </p>
+
+  <h2>How the Optimizer Works</h2>
+
+  <p>When you submit a query, the optimizer:</p>
+
+  <ol class="list-decimal list-inside space-y-2 ml-4 mb-4">
+    <li><strong>Parses the query syntax.</strong></li>
+    <li><strong>Checks which indexes are available on the tables involved.</strong></li>
+    <li><strong>Estimates the cost of multiple execution plans</strong> (e.g., which table to scan first, which indexes to use, which join order is cheapest).</li>
+    <li><strong>Picks the plan with the lowest estimated cost.</strong></li>
+    <li><strong>Executes that plan.</strong></li>
+  </ol>
+
+  <p>
+    The catch? It's all <strong>estimates</strong>. MySQL uses table size and index stats to make a guess. Usually right, but sometimes very wrong.
+  </p>
+
+  <h2>Common Mistakes That Confuse the Optimizer</h2>
+
+  <p>Some patterns make the optimizer give up and do a full scan. Here's what to avoid:</p>
+
+  <h3>1. Type Mismatch</h3>
+
+  <p>
+    Searching an INT column with a string kills indexes:
+  </p>
+
+  <pre><code class="language-sql">-- Bad: passing a string to an INT column
+EXPLAIN SELECT * FROM users WHERE id = '123';</code></pre>
+
+  <p>Fix: use the right type</p>
+
+  <pre><code class="language-sql">-- Good
+EXPLAIN SELECT * FROM users WHERE id = 123;</code></pre>
+
+  <h3>2. LIKE with Leading %</h3>
+
+  <p>
+    This kills indexes. Don't do it:
+  </p>
+
+  <pre><code class="language-sql">-- Bad
+EXPLAIN SELECT * FROM users WHERE email LIKE '%@example.com';</code></pre>
+
+  <p>This will be fast:</p>
+
+  <pre><code class="language-sql">-- Good
+EXPLAIN SELECT * FROM users WHERE email LIKE 'admin%';</code></pre>
+
+  <h3>3. OR with Unindexed Columns</h3>
+
+  <p>
+    If one side of OR isn't indexed, MySQL might give up:
+  </p>
+
+  <pre><code class="language-sql">EXPLAIN SELECT * FROM posts WHERE author_id = 5 OR metadata LIKE '%draft%';</code></pre>
+
+  <p>
+    Add an index to the <code>metadata</code> column or rewrite the query.
+  </p>
+
+  <h3>4. Functions on Indexed Columns</h3>
+
+  <p>
+    Functions on columns kill indexes:
+  </p>
+
+  <pre><code class="language-sql">-- Bad
+EXPLAIN SELECT * FROM events WHERE YEAR(event_date) = 2025;</code></pre>
+
+  <p>Rewrite it:</p>
+
+  <pre><code class="language-sql">-- Good
+EXPLAIN SELECT * FROM events
+  WHERE event_date >= '2025-01-01'
+    AND event_date < '2026-01-01';</code></pre>
+
+  <h3>5. Subqueries in WHERE</h3>
+
+  <p>
+    Subqueries with IN can be slow:
+  </p>
+
+  <pre><code class="language-sql">EXPLAIN SELECT * FROM orders WHERE user_id IN (
+  SELECT id FROM users WHERE country = 'US'
+);</code></pre>
+
+  <p>
+    Use a JOIN instead:
+  </p>
+
+  <pre><code class="language-sql">EXPLAIN SELECT DISTINCT o.* FROM orders o
+  JOIN users u ON o.user_id = u.id
+  WHERE u.country = 'US';</code></pre>
+
+  <h2>Red Flags in EXPLAIN</h2>
+
+  <p>When your query is slow, look for these:</p>
+
+  <ul>
+    <li><strong><code>type: ALL</code> —</strong> Full table scan. Add an index.</li>
+    <li><strong><code>Using filesort</code> —</strong> Sorting in memory. Add an index for ORDER BY.</li>
+    <li><strong><code>Using temporary</code> —</strong> Temp table for GROUP BY. Bad for big data.</li>
+    <li><strong><code>rows</code> is huge —</strong> Examining way too many rows. Index problem.</li>
+    <li><strong><code>key: NULL</code> —</strong> No index used. Add one or check for type mismatches.</li>
+  </ul>
+
+  <h2>Measure Your Fixes</h2>
+
+  <p>Always run EXPLAIN before and after. Here's an example:</p>
+
+  <p><strong>Before:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>type</th>
+        <th>key</th>
+        <th>rows</th>
+        <th>Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ALL</td>
+        <td>NULL</td>
+        <td>1000000</td>
+        <td>Using where</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>After creating an index:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>type</th>
+        <th>key</th>
+        <th>rows</th>
+        <th>Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>ref</td>
+        <td>idx_user_created</td>
+        <td>42</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Boom. From 1M rows to 42. That's a massive win.
+  </p>
+
+  <div class="callout tip">
+    <strong>Pro tip:</strong> Use <code>EXPLAIN ANALYZE</code> to see real numbers instead of guesses. If they're way off, run <code>ANALYZE TABLE</code> to update MySQL's stats.
+  </div>
+</MysqlExplainLayout>

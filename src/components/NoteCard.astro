@@ -1,0 +1,41 @@
+---
+interface Props {
+  title: string;
+  description: string;
+  date: Date;
+  tags: string[];
+  href: string;
+  type?: 'content' | 'interactive';
+}
+
+const { title, description, date, tags, href, type } = Astro.props;
+
+const formattedDate = new Date(date).toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+
+<a href={href} class="landing-card hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all">
+  <div class="flex justify-between items-start gap-2 mb-2">
+    <h3 class="mt-0 flex-1">{title}</h3>
+    {type === 'interactive' && (
+      <span class="badge">Interactive</span>
+    )}
+  </div>
+  <p>{description}</p>
+  <div class="flex gap-2 items-center justify-between mt-4">
+    <div class="flex gap-1 flex-wrap">
+      {tags.slice(0, 2).map((tag) => (
+        <span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded">
+          {tag}
+        </span>
+      ))}
+      {tags.length > 2 && (
+        <span class="text-xs text-gray-500 dark:text-gray-400">+{tags.length - 2}</span>
+      )}
+    </div>
+    <time class="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</time>
+  </div>
+</a>

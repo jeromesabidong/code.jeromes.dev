@@ -1,44 +1,27 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CategoryCard from '../components/CategoryCard.astro';
+import { CATEGORIES, CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '../lib/categories';
+import { getCategoryCounts } from '../lib/notes';
+
+const counts = await getCategoryCounts();
 ---
 
 <BaseLayout title="Home">
-  <h1>MySQL EXPLAIN & Query Optimization</h1>
+  <h1>Code Notes</h1>
   <p>
-    A developer-friendly reference for understanding MySQL's query optimizer and using <code>EXPLAIN</code> to diagnose and fix slow queries.
+    A personal knowledge base across backend, infrastructure, database, frontend, and leadership topics. Explore categories below or use the navigation to find what you're looking for.
   </p>
 
   <div class="landing-grid">
-    <div class="landing-card">
-      <h3>EXPLAIN Basics</h3>
-      <p>
-        Learn what <code>EXPLAIN</code> does, how to run it, and what each column means. From access types to extra information, we'll decode the output.
-      </p>
-      <p><a href="/explain">Read the guide →</a></p>
-    </div>
-
-    <div class="landing-card">
-      <h3>Query Optimizer</h3>
-      <p>
-        Understand how MySQL's cost-based optimizer picks execution plans, common pitfalls, and how to use <code>EXPLAIN</code> to diagnose problems.
-      </p>
-      <p><a href="/optimizer">Read the guide →</a></p>
-    </div>
-
-    <div class="landing-card">
-      <h3>Indexes</h3>
-      <p>
-        Index fundamentals: types, syntax, how the optimizer uses them, and how they show up in <code>EXPLAIN</code> output.
-      </p>
-      <p><a href="/indexes">Read the guide →</a></p>
-    </div>
-
-    <div class="landing-card">
-      <h3>Practice</h3>
-      <p>
-        Step-by-step walkthrough of real query optimization. See a slow query, diagnose it with <code>EXPLAIN</code>, apply a fix, and verify the improvement.
-      </p>
-      <p><a href="/practice">Work through it →</a></p>
-    </div>
+    {CATEGORIES.map((category) => (
+      <CategoryCard
+        category={category}
+        label={CATEGORY_LABELS[category]}
+        description={CATEGORY_DESCRIPTIONS[category]}
+        count={counts[category]}
+        href={`/${category}`}
+      />
+    ))}
   </div>
 </BaseLayout>

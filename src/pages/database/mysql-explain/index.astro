@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="MySQL EXPLAIN & Query Optimization">
+  <h1>MySQL EXPLAIN & Query Optimization</h1>
+  <p>
+    Your go-to guide for understanding why your queries are slow and how to fix them. Learn to read <code>EXPLAIN</code>, understand indexes, and optimize like a pro.
+  </p>
+
+  <div class="landing-grid">
+    <div class="landing-card">
+      <h3>EXPLAIN Basics</h3>
+      <p>
+        What does <code>EXPLAIN</code> actually tell you? We'll walk through each column and show you what to look for.
+      </p>
+      <p><a href="./explain">Read the guide →</a></p>
+    </div>
+
+    <div class="landing-card">
+      <h3>Query Optimizer</h3>
+      <p>
+        Why does MySQL pick the queries it does? Learn the common mistakes that throw it off and how to steer it right.
+      </p>
+      <p><a href="./optimizer">Read the guide →</a></p>
+    </div>
+
+    <div class="landing-card">
+      <h3>Indexes</h3>
+      <p>
+        Indexes are your secret weapon. We'll show you what they are, how to use them, and when they actually help.
+      </p>
+      <p><a href="./indexes">Read the guide →</a></p>
+    </div>
+
+    <div class="landing-card">
+      <h3>Practice</h3>
+      <p>
+        Real examples with real problems. See a slow query, diagnose it, fix it, and watch it fly.
+      </p>
+      <p><a href="./practice">Work through it →</a></p>
+    </div>
+  </div>
+</BaseLayout>

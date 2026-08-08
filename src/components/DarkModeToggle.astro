@@ -1,0 +1,47 @@
+---
+---
+
+<button
+  id="dark-toggle"
+  class="p-2 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+  aria-label="Toggle dark mode"
+>
+  <svg class="w-5 h-5 sun-icon hidden dark:block" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+  </svg>
+  <svg class="w-5 h-5 moon-icon block dark:hidden" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+</button>
+
+<script>
+  const btn = document.getElementById('dark-toggle');
+  const htmlElement = document.documentElement;
+
+  function setDarkMode(isDark) {
+    if (isDark) {
+      htmlElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      htmlElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }
+
+  // Initialize theme on page load
+  const savedTheme = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const shouldBeDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+
+  if (shouldBeDark) {
+    htmlElement.classList.add('dark');
+  } else {
+    htmlElement.classList.remove('dark');
+  }
+
+  // Toggle on button click
+  btn?.addEventListener('click', () => {
+    const isDark = htmlElement.classList.contains('dark');
+    setDarkMode(!isDark);
+  });
+</script>
