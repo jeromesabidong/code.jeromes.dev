@@ -99,6 +99,14 @@
   .badge {
     @apply inline-block text-xs font-semibold px-2 py-1 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200;
   }
+
+  .step {
+    @apply border border-gray-300 dark:border-gray-700 rounded-lg p-4 mb-4 bg-gray-50 dark:bg-gray-800;
+  }
+
+  .step-number {
+    @apply font-mono font-semibold text-blue-700 dark:text-blue-300 block mb-2;
+  }
 }
 
 html {
@@ -107,4 +115,86 @@ html {
 
 body {
   @apply transition-colors duration-300;
+}
+
+/* Dark mode styles for .dark class */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  @apply bg-slate-950 text-gray-100;
+}
+
+.dark h2 {
+  @apply border-gray-700;
+}
+
+.dark a {
+  @apply text-blue-400;
+}
+
+.dark code {
+  @apply bg-gray-800;
+}
+
+.dark pre {
+  @apply bg-gray-900 border-gray-700;
+}
+
+.dark table th,
+.dark table td {
+  @apply border-gray-700;
+}
+
+.dark table th {
+  @apply bg-gray-800;
+}
+
+.dark table tr:nth-child(even) {
+  @apply bg-gray-900;
+}
+
+.dark .callout {
+  @apply border-blue-400 bg-gray-800;
+}
+
+.dark .callout.tip {
+  @apply border-green-400;
+}
+
+.dark .callout.warning {
+  @apply border-yellow-400;
+}
+
+.dark .callout.note {
+  @apply border-blue-400;
+}
+
+.dark .landing-card {
+  @apply border-gray-700 bg-gray-800;
+}
+
+.dark .landing-card p {
+  @apply text-gray-400;
+}
+
+.dark .badge {
+  @apply bg-amber-900 text-amber-200;
+}
+
+.dark .step {
+  @apply border-gray-700 bg-gray-800;
+}
+
+.dark .step-number {
+  @apply text-blue-300;
+}
+
+.dark .dark\:block {
+  display: block;
+}
+
+.dark .dark\:hidden {
+  display: none;
 }

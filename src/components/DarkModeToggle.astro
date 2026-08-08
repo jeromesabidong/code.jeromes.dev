@@ -28,17 +28,6 @@
     }
   }
 
-  // Initialize theme on page load
-  const savedTheme = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const shouldBeDark = savedTheme ? savedTheme === 'dark' : prefersDark;
-
-  if (shouldBeDark) {
-    htmlElement.classList.add('dark');
-  } else {
-    htmlElement.classList.remove('dark');
-  }
-
   // Toggle on button click
   btn?.addEventListener('click', () => {
     const isDark = htmlElement.classList.contains('dark');

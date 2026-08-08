@@ -5,3 +5,8 @@ dist/
 .DS_Store
 .env
 .env.local
+
+# Claude Code
+.claude/
+.mcp.json
+.playwright-mcp/
