@@ -1,5 +1,5 @@
 {
-  "name": "mysql-explain",
+  "name": "code.jeromes.dev",
   "version": "0.1.0",
   "description": "A lightweight reference site for MySQL EXPLAIN and query optimization",
   "type": "module",
