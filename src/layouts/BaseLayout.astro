@@ -1,4 +1,5 @@
 ---
+import { SEO } from 'astro-seo';
 import '../styles/global.css';
 import Sidebar from '../components/Sidebar.astro';
 import MobileNav from '../components/MobileNav.astro';
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const { title, description = SITE_DESCRIPTION } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!DOCTYPE html>
@@ -19,8 +21,13 @@ const { title, description = SITE_DESCRIPTION } = Astro.props;
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <title>{title} · {SITE_TITLE}</title>
+    <SEO
+      title={title}
+      titleTemplate={`%s · ${SITE_TITLE}`}
+      description={description}
+      canonical={canonical}
+      twitter={{ card: 'summary' }}
+    />
     <slot name="head" />
     <script is:inline>
       (function() {

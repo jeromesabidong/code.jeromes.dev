@@ -9,8 +9,10 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.1.0",
     "astro-icon": "^1.1.5",
+    "astro-seo": "^1.1.0",
     "fuse.js": "^7.5.0"
   },
   "devDependencies": {
