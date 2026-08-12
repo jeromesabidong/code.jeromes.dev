@@ -24,7 +24,7 @@ import { SITE_TITLE } from '../lib/site';
 
 <div id="mobile-backdrop" class="hidden md:hidden fixed inset-0 z-40 bg-black/50"></div>
 
-<aside id="mobile-drawer" class="md:hidden fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] flex flex-col overflow-y-auto bg-white dark:bg-slate-900 border-r border-gray-300 dark:border-gray-700 transform translate-x-full transition-transform duration-200 ease-in-out pointer-events-none">
+<aside id="mobile-drawer" class="md:hidden fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] flex flex-col overflow-y-auto bg-white dark:bg-slate-900 border-r border-gray-300 dark:border-gray-700 transform -translate-x-full transition-transform duration-200 ease-in-out pointer-events-none">
   <div class="flex items-center justify-between px-6 py-6 border-b border-gray-300 dark:border-gray-700">
     <a href="/" class="font-mono text-xl font-bold text-gray-900 dark:text-gray-100">
       {SITE_TITLE}
@@ -56,7 +56,7 @@ import { SITE_TITLE } from '../lib/site';
   const drawer = document.getElementById('mobile-drawer');
 
   function openDrawer() {
-    drawer?.classList.remove('translate-x-full');
+    drawer?.classList.remove('-translate-x-full');
     drawer?.classList.remove('pointer-events-none');
     backdrop?.classList.remove('hidden');
     openBtn?.setAttribute('aria-expanded', 'true');
@@ -64,7 +64,7 @@ import { SITE_TITLE } from '../lib/site';
   }
 
   function closeDrawer() {
-    drawer?.classList.add('translate-x-full');
+    drawer?.classList.add('-translate-x-full');
     drawer?.classList.add('pointer-events-none');
     backdrop?.classList.add('hidden');
     openBtn?.setAttribute('aria-expanded', 'false');

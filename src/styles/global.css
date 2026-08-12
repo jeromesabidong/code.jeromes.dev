@@ -106,6 +106,26 @@
     @apply text-gray-600 dark:text-gray-400 text-sm;
   }
 
+  .landing-grid.list-view {
+    @apply grid-cols-1 gap-3;
+  }
+
+  .landing-grid.list-view .landing-card {
+    @apply flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-4;
+  }
+
+  .landing-grid.list-view .landing-card > div:first-of-type {
+    @apply mb-0 min-w-0 flex-1;
+  }
+
+  .landing-grid.list-view .landing-card p {
+    @apply hidden;
+  }
+
+  .landing-grid.list-view .landing-card > div:last-of-type {
+    @apply mt-0 flex-shrink-0;
+  }
+
   .badge {
     @apply inline-block text-xs font-semibold px-2 py-1 rounded bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200;
   }

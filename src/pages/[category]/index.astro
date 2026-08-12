@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NoteCard from '../../components/NoteCard.astro';
+import ViewToggle from '../../components/ViewToggle.astro';
 import { CATEGORIES, CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '../../lib/categories';
 import { getNotesByCategory } from '../../lib/notes';
 
@@ -21,17 +22,31 @@ const notes = await getNotesByCategory(category as any);
   <p>{categoryDescription}</p>
 
   {notes.length > 0 ? (
-    <div class="landing-grid">
-      {notes.map((note) => (
-        <NoteCard
-          title={note.title}
-          description={note.description}
-          date={note.date}
-          tags={note.tags}
-          href={note.href}
-        />
-      ))}
-    </div>
+    <>
+      <div class="flex justify-end mb-4">
+        <ViewToggle targetId="notes-container" />
+      </div>
+      <div id="notes-container" class="landing-grid">
+        {notes.map((note) => (
+          <NoteCard
+            title={note.title}
+            description={note.description}
+            date={note.date}
+            tags={note.tags}
+            href={note.href}
+          />
+        ))}
+      </div>
+      <script is:inline>
+        (function () {
+          var stored = localStorage.getItem('notesViewMode');
+          if (stored === 'list') {
+            var el = document.getElementById('notes-container');
+            if (el) el.classList.add('list-view');
+          }
+        })();
+      </script>
+    </>
   ) : (
     <div class="text-center py-12">
       <p class="text-gray-500 dark:text-gray-400">

@@ -1,0 +1,73 @@
+---
+interface Props {
+  targetId?: string;
+}
+
+const { targetId = 'notes-container' } = Astro.props;
+---
+
+<div class="view-toggle inline-flex rounded-lg border-2 border-gray-300 dark:border-gray-600 overflow-hidden" role="group" aria-label="View mode">
+  <button
+    type="button"
+    id="view-card-btn"
+    class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+    aria-label="Card view"
+    aria-pressed="true"
+    data-view="card"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+      <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+      <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+      <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+    </svg>
+  </button>
+  <button
+    type="button"
+    id="view-list-btn"
+    class="p-2 border-l-2 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+    aria-label="List view"
+    aria-pressed="false"
+    data-view="list"
+  >
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <line x1="4" y1="6" x2="20" y2="6"></line>
+      <line x1="4" y1="12" x2="20" y2="12"></line>
+      <line x1="4" y1="18" x2="20" y2="18"></line>
+    </svg>
+  </button>
+</div>
+
+<script define:vars={{ targetId }}>
+  function initViewToggle() {
+    const STORAGE_KEY = 'notesViewMode';
+    const container = document.getElementById(targetId);
+    const cardBtn = document.getElementById('view-card-btn');
+    const listBtn = document.getElementById('view-list-btn');
+    if (!container || !cardBtn || !listBtn) return;
+
+    function applyView(view) {
+      container.classList.toggle('list-view', view === 'list');
+      cardBtn.setAttribute('aria-pressed', String(view === 'card'));
+      listBtn.setAttribute('aria-pressed', String(view === 'list'));
+    }
+
+    const currentView = container.classList.contains('list-view') ? 'list' : 'card';
+    applyView(currentView);
+
+    cardBtn.addEventListener('click', () => {
+      localStorage.setItem(STORAGE_KEY, 'card');
+      applyView('card');
+    });
+    listBtn.addEventListener('click', () => {
+      localStorage.setItem(STORAGE_KEY, 'list');
+      applyView('list');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initViewToggle);
+  } else {
+    initViewToggle();
+  }
+</script>
