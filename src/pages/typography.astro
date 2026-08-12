@@ -1,0 +1,154 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Typography Reference"
+  description="Typography elements and styles used on this site"
+>
+  <h1>Typography Reference</h1>
+  <p>
+    This page documents all typography elements and styling available on this
+    site.
+  </p>
+
+  <h2>Headings</h2>
+  <p>The site uses a monospace font for all headings with varying sizes:</p>
+  <h1>Heading 1 (h1) - 4xl, bold</h1>
+  <h2>Heading 2 (h2) - 2xl, bold with border</h2>
+  <h3>Heading 3 (h3) - xl, bold</h3>
+  <h4>Heading 4 (h4) - bold</h4>
+  <h5>Heading 5 (h5) - bold</h5>
+  <h6>Heading 6 (h6) - bold</h6>
+
+  <h2>Paragraphs</h2>
+  <p>
+    Regular paragraph text with relaxed line height and bottom margin spacing.
+  </p>
+  <p>This is another paragraph to show spacing between paragraphs.</p>
+
+  <h2>Links</h2>
+  <p>
+    Links are styled in <a href="#">blue with hover underline</a> in light mode and
+    <a href="#">light blue in dark mode</a>.
+  </p>
+
+  <h2>Unordered Lists</h2>
+  <p>Unordered lists use disc bullets:</p>
+  <ul>
+    <li>First item</li>
+    <li>Second item</li>
+    <li>
+      Third item with nested list:
+      <ul>
+        <li>Nested item 1</li>
+        <li>Nested item 2</li>
+      </ul>
+    </li>
+  </ul>
+
+  <h2>Ordered Lists</h2>
+  <p>Ordered lists use decimal numbering:</p>
+  <ol>
+    <li>First step</li>
+    <li>Second step</li>
+    <li>
+      Third step with nested list:
+      <ol>
+        <li>Nested step 1</li>
+        <li>Nested step 2</li>
+      </ol>
+    </li>
+  </ol>
+
+  <h2>Inline Code</h2>
+  <p>
+    Inline code appears like this: <code>const variable = "example";</code> with a
+    subtle background and padding.
+  </p>
+
+  <h2>Code Blocks</h2>
+  <p>Code blocks have a full background with borders:</p>
+  <pre><code>function example() {
+  `return true;`
+}</code></pre>
+
+  <h2>Tables</h2>
+  <p>Tables use monospace font with alternating row colors:</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Header 1</th>
+        <th>Header 2</th>
+        <th>Header 3</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Cell 1</td>
+        <td>Cell 2</td>
+        <td>Cell 3</td>
+      </tr>
+      <tr>
+        <td>Cell 4</td>
+        <td>Cell 5</td>
+        <td>Cell 6</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Callout Blocks</h2>
+  <p>
+    Callout blocks highlight important information with colored left borders:
+  </p>
+
+  <div class="callout note">
+    <strong>Note:</strong> This is a standard note callout with a blue border.
+  </div>
+
+  <div class="callout tip">
+    <strong>Tip:</strong> This is a tip callout with a green border.
+  </div>
+
+  <div class="callout warning">
+    <strong>Warning:</strong> This is a warning callout with a yellow border.
+  </div>
+
+  <h2>Badges</h2>
+  <p>Badges for tagging and categorization:</p>
+  <p>
+    <span class="badge">Tag 1</span>
+    <span class="badge">Tag 2</span>
+    <span class="badge">Tag 3</span>
+  </p>
+
+  <h2>Step Blocks</h2>
+  <p>Step blocks for multi-step processes:</p>
+  <div class="step">
+    <span class="step-number">Step 1</span>
+    <p>First step of the process</p>
+  </div>
+  <div class="step">
+    <span class="step-number">Step 2</span>
+    <p>Second step of the process</p>
+  </div>
+
+  <h2>Color Palette</h2>
+  <div class="landing-grid">
+    <div class="landing-card">
+      <h3 style="color: rgb(37, 99, 235);">Primary Blue</h3>
+      <p>Used for headings, links, and primary UI elements</p>
+      <code style="background: #dbeafe;">#2563eb</code>
+    </div>
+    <div class="landing-card">
+      <h3 style="color: rgb(22, 163, 74);">Success Green</h3>
+      <p>Used for positive actions and success states</p>
+      <code style="background: #dcfce7;">#16a34a</code>
+    </div>
+    <div class="landing-card">
+      <h3 style="color: rgb(234, 179, 8);">Warning Yellow</h3>
+      <p>Used for warnings and alerts</p>
+      <code style="background: #fef3c7;">#eab308</code>
+    </div>
+  </div>
+</BaseLayout>

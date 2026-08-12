@@ -7,17 +7,187 @@ interface Props {
   href: string;
 }
 
-const { label, description, count, href } = Astro.props;
+const { category, label, description, count, href } = Astro.props;
+
+const CALL_NUMBERS: Record<string, string> = {
+  backend: 'BACK–01',
+  infrastructure: 'INFR–02',
+  database: 'DATA–03',
+  frontend: 'FRON–04',
+  leadership: 'LEAD–05',
+  others: 'MISC–06',
+};
+
+const TAB_ACCENTS: Record<string, 'red' | 'teal' | 'gold'> = {
+  backend: 'red',
+  infrastructure: 'teal',
+  database: 'gold',
+  frontend: 'red',
+  leadership: 'teal',
+  others: 'gold',
+};
+
+const callNumber = CALL_NUMBERS[category] ?? '000–00';
+const accent = TAB_ACCENTS[category] ?? 'red';
+const entryWord = count === 1 ? 'entry' : 'entries';
 ---
 
-<a href={href} class="landing-card hover:shadow-lg hover:border-blue-400 dark:hover:border-blue-500 transition-all">
-  <div class="flex justify-between items-start gap-4">
-    <div class="flex-1">
-      <h3 class="mt-0">{label}</h3>
-      <p>{description}</p>
-    </div>
-    <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">
-      {count}
-    </div>
-  </div>
+<a href={href} class={`index-card accent-${accent}`}>
+  <span class="tab" aria-hidden="true"></span>
+  <span class="call-number">{callNumber}</span>
+  <h3 class="card-title">{label}</h3>
+  <p class="card-desc">{description}</p>
+  <span class="stamp">{count} {entryWord}</span>
 </a>
+
+<style>
+  .index-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 2rem 1.5rem 1.5rem;
+    background: #f6f1e6;
+    border: 1px solid rgba(38, 34, 32, 0.15);
+    border-radius: 2px 2px 10px 10px;
+    text-decoration: none;
+    color: #262220;
+    box-shadow: 0 1px 2px rgba(38, 34, 32, 0.08);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .index-card:hover,
+  .index-card:focus-visible {
+    transform: translateY(-6px) rotate(-0.35deg);
+    box-shadow: 0 14px 24px rgba(38, 34, 32, 0.18);
+    border-color: rgba(38, 34, 32, 0.3);
+    text-decoration: none;
+  }
+
+  .tab {
+    position: absolute;
+    top: -10px;
+    left: 1.5rem;
+    width: 46px;
+    height: 16px;
+    clip-path: polygon(8% 0, 92% 0, 100% 100%, 0% 100%);
+  }
+
+  .accent-red .tab {
+    background: #c1443c;
+  }
+
+  .accent-teal .tab {
+    background: #2f6f62;
+  }
+
+  .accent-gold .tab {
+    background: #b08948;
+  }
+
+  .call-number {
+    font-family: 'Space Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: rgba(38, 34, 32, 0.62);
+  }
+
+  .card-title {
+    font-family: 'Space Mono', ui-monospace, monospace;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .card-desc {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(38, 34, 32, 0.75);
+    margin: 0;
+    flex: 1;
+  }
+
+  .stamp {
+    align-self: flex-start;
+    font-family: 'Space Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.55rem;
+    border: 1.5px dashed currentColor;
+    border-radius: 3px;
+    transform: rotate(-2deg);
+    margin-top: 0.5rem;
+  }
+
+  .accent-red .stamp {
+    color: #c1443c;
+  }
+
+  .accent-teal .stamp {
+    color: #2f6f62;
+  }
+
+  .accent-gold .stamp {
+    color: #9c7534;
+  }
+
+  :global(html.dark) .index-card {
+    background: #1e293b;
+    border-color: rgba(226, 232, 240, 0.1);
+    color: #e2e8f0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  :global(html.dark) .index-card:hover,
+  :global(html.dark) .index-card:focus-visible {
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.5);
+    border-color: rgba(226, 232, 240, 0.22);
+  }
+
+  :global(html.dark) .call-number {
+    color: rgba(226, 232, 240, 0.62);
+  }
+
+  :global(html.dark) .card-desc {
+    color: rgba(226, 232, 240, 0.72);
+  }
+
+  :global(html.dark) .accent-red .tab {
+    background: #e2604f;
+  }
+
+  :global(html.dark) .accent-teal .tab {
+    background: #4fb39e;
+  }
+
+  :global(html.dark) .accent-gold .tab {
+    background: #d8ae6c;
+  }
+
+  :global(html.dark) .accent-red .stamp {
+    color: #e2604f;
+  }
+
+  :global(html.dark) .accent-teal .stamp {
+    color: #4fb39e;
+  }
+
+  :global(html.dark) .accent-gold .stamp {
+    color: #d8ae6c;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .index-card {
+      transition: none;
+    }
+
+    .index-card:hover,
+    .index-card:focus-visible {
+      transform: none;
+    }
+  }
+</style>

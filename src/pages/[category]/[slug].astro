@@ -1,25 +1,33 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 
 export async function getStaticPaths() {
   const notes = await getCollection('notes', ({ data }) => !data.draft);
 
-  return notes.map((entry) => ({
-    params: {
-      category: entry.data.category,
-      slug: entry.slug.split('/')[1], // Extract slug from "category/slug"
-    },
-    props: { entry },
-  }));
+  return notes.map((entry) => {
+    const slugParts = entry.id.split('/');
+    const slug = slugParts.length > 1 ? slugParts[1] : entry.id;
+    return {
+      params: {
+        category: entry.data.category,
+        slug: slug,
+      },
+      props: { entryId: entry.id },
+    };
+  });
 }
 
 interface Props {
-  entry: any;
+  entryId: string;
 }
 
-const { entry } = Astro.props;
-const { Content } = await entry.render();
+const { entryId } = Astro.props;
+const entry = await getEntry('notes', entryId);
+if (!entry) {
+  return Astro.redirect('/');
+}
+const { Content } = await render(entry);
 const { title, description } = entry.data;
 ---
 

@@ -3,17 +3,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import CategoryCard from '../components/CategoryCard.astro';
 import { CATEGORIES, CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '../lib/categories';
 import { getCategoryCounts } from '../lib/notes';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../lib/site';
 
 const counts = await getCategoryCounts();
 ---
 
 <BaseLayout title="Home">
-  <h1>Code Notes</h1>
-  <p>
-    A personal knowledge base across backend, infrastructure, database, frontend, and leadership topics. Explore categories below or use the navigation to find what you're looking for.
-  </p>
+  <Fragment slot="head">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;1,8..60,400;0,8..60,700&display=swap"
+      rel="stylesheet"
+    />
+  </Fragment>
 
-  <div class="landing-grid">
+  <section class="catalog-hero">
+    <div class="drawer-plate">
+      <span class="plate-symbol" aria-hidden="true">&Sigma;</span>
+      <div>
+        <h1 class="plate-title">{SITE_TITLE}</h1>
+        <p class="plate-desc">{SITE_DESCRIPTION}</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="catalog-grid">
     {CATEGORIES.map((category) => (
       <CategoryCard
         category={category}
@@ -25,3 +40,89 @@ const counts = await getCategoryCounts();
     ))}
   </div>
 </BaseLayout>
+
+<style>
+  .catalog-hero {
+    margin: -0.5rem 0 2.5rem;
+  }
+
+  .drawer-plate {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.75rem 2rem;
+    background: linear-gradient(180deg, #ede6d5 0%, #e6dcc6 100%);
+    border: 1px solid rgba(38, 34, 32, 0.15);
+    border-radius: 6px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      0 1px 2px rgba(38, 34, 32, 0.08);
+  }
+
+  .plate-symbol {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 4px;
+    background: #262220;
+    color: #ede6d5;
+    font-family: 'Space Mono', ui-monospace, monospace;
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .plate-title {
+    font-family: 'Space Mono', ui-monospace, monospace;
+    margin: 0 0 0.35rem;
+    font-size: 1.5rem;
+    letter-spacing: 0.02em;
+  }
+
+  .plate-desc {
+    font-family: 'Source Serif 4', Georgia, serif;
+    margin: 0;
+    color: rgba(38, 34, 32, 0.75);
+    max-width: 46ch;
+  }
+
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1.75rem 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .catalog-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .catalog-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  :global(html.dark) .drawer-plate {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    border-color: rgba(226, 232, 240, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.03),
+      0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  :global(html.dark) .plate-symbol {
+    background: #e2e8f0;
+    color: #0f172a;
+  }
+
+  :global(html.dark) .plate-title {
+    color: #e2e8f0;
+  }
+
+  :global(html.dark) .plate-desc {
+    color: rgba(226, 232, 240, 0.72);
+  }
+</style>

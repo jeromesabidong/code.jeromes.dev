@@ -1,0 +1,690 @@
+---
+title: MySQL EXPLAIN & Query Optimization
+description: Your go-to guide for understanding why your queries are slow and how to fix them. Learn to read EXPLAIN, understand indexes, and optimize like a pro.
+category: database
+tags: [mysql, sql, performance, database, optimization, indexes, explain]
+date: 2026-08-08
+---
+
+import PageOutline from '../../../components/PageOutline.astro';
+
+export const sections = [
+  {
+    id: 'explain-basics',
+    label: 'EXPLAIN Basics',
+    children: [
+      { id: 'running-explain', label: 'Running EXPLAIN' },
+      { id: 'what-each-column-means', label: 'What Each Column Means' },
+      { id: 'access-types', label: 'Access Types' },
+      { id: 'the-extra-column', label: 'The Extra Column' },
+      { id: 'real-example', label: 'Real Example' },
+    ],
+  },
+  {
+    id: 'indexes',
+    label: 'Indexes',
+    children: [
+      { id: 'how-indexes-work', label: 'How Indexes Work' },
+      { id: 'index-types', label: 'Index Types' },
+      { id: 'creating-and-dropping-indexes', label: 'Creating and Dropping Indexes' },
+      { id: 'when-mysql-uses-indexes', label: 'When MySQL Uses Indexes' },
+      { id: 'reading-index-info-in-explain', label: 'Reading Index Info in EXPLAIN' },
+      { id: 'composite-index-design', label: 'Composite Index Design' },
+      { id: 'full-text-indexes', label: 'Full-Text Indexes' },
+    ],
+  },
+  {
+    id: 'query-optimizer',
+    label: 'Query Optimizer',
+    children: [
+      { id: 'how-the-optimizer-works', label: 'How the Optimizer Works' },
+      { id: 'common-mistakes', label: 'Common Mistakes That Confuse the Optimizer' },
+      { id: 'red-flags-in-explain', label: 'Red Flags in EXPLAIN' },
+      { id: 'measure-your-fixes', label: 'Measure Your Fixes' },
+    ],
+  },
+  {
+    id: 'practice',
+    label: 'Practice',
+    children: [
+      { id: 'scenario-slow-user-feed', label: 'Scenario: Slow User Feed' },
+      { id: 'example-2-join-query', label: 'Example 2: JOIN Query' },
+      { id: 'complex-scenario', label: 'Advanced Example: Multi-Join Query' },
+    ],
+  },
+];
+
+<PageOutline sections={sections} />
+
+## Understanding MySQL EXPLAIN
+
+`EXPLAIN` shows you how MySQL will run your query. It's like peeking into the engine before you start driving. You'll see which tables it hits, what indexes it uses, and whether it's about to do something expensive like sorting the whole table in memory.
+
+### Running EXPLAIN
+
+Just add `EXPLAIN` before your query:
+
+```sql
+EXPLAIN SELECT * FROM users WHERE id = 1;
+```
+
+Want JSON instead of a table? Use:
+
+```sql
+EXPLAIN FORMAT=JSON SELECT * FROM users WHERE id = 1;
+```
+
+Want to see actual numbers instead of estimates? Use `EXPLAIN ANALYZE` (it actually runs the query, so be careful on big tables):
+
+```sql
+EXPLAIN ANALYZE SELECT * FROM users WHERE id = 1;
+```
+
+<div class="callout note">
+  <strong class="text-gray-900 dark:text-gray-100">Note:</strong> <code>EXPLAIN ANALYZE</code> executes the query, so use it carefully on large tables or expensive operations. For a quick estimate without execution, use plain <code>EXPLAIN</code>.
+</div>
+
+### What Each Column Means
+
+Here's the breakdown:
+
+| Column | Meaning |
+|---|---|
+| `id` | The sequential order in which `SELECT` parts are executed. Identical `id` values indicate tables accessed at the same level (join order within a single select). Higher `id` values execute first (nested queries). |
+| `select_type` | Type of query: `SIMPLE` (single table), `PRIMARY` (outer query in subqueries), `SUBQUERY` (subquery), `DERIVED` (FROM subquery), `UNION`, `DEPENDENT SUBQUERY`, etc. |
+| `table` | The table (or alias) being accessed in this row. |
+| `partitions` | Which partition(s) are accessed (only if table is partitioned). `NULL` if not partitioned or all partitions are pruned. |
+| `type` | How MySQL finds the rows. Best: `const`, Good: `ref`, Bad: `ALL` (full table scan). See the section below for details. |
+| `possible_keys` | Indexes MySQL could use for this table. `NULL` if none available. This is advisory; the optimizer may choose a different index (or none). |
+| `key` | The index actually used. `NULL` if no index was used (full table scan). Compare to `possible_keys` to spot missed opportunities. |
+| `key_len` | The length (in bytes) of the key used. Shorter is usually better. Useful for composite indexes—tells you how many columns were used in the key. |
+| `ref` | The column(s) used in the index lookup (or a constant, another table's column for joins, etc.). |
+| `rows` | Estimated number of rows examined from this table. MySQL's estimate, not actual count. If this is large, it's a sign that indexes might not be used effectively or a table scan is happening. |
+| `filtered` | Estimated percentage of rows that survive the `WHERE` clause for this table (after key lookup, any remaining filters applied). Lower = more rows examined but fewer returned. |
+| `Extra` | Additional execution flags. See key flags below. |
+
+### Access Types (How MySQL Finds Rows)
+
+The `type` column shows how fast MySQL can find rows. Best to worst:
+
+| Rank | Type | Description |
+|---|---|---|
+| 1️⃣ | `const` | Finds exactly one row via primary key. Super fast. |
+| 2️⃣ | `eq_ref` | One row per outer row in a join. Still very fast. |
+| 3️⃣ | `ref` | Multiple rows via index. Good. Common for indexed columns in WHERE. |
+| 4️⃣ | `range` | Range scan like `WHERE id > 100`. Decent if the range is small. |
+| 5️⃣ | `index` | Scans entire index. Slow but better than table scan. |
+| 6️⃣ | `ALL` | Full table scan. Every row checked. This is bad—add an index or rewrite the query. |
+
+### The Extra Column (Red Flags)
+
+This column tells you if MySQL is doing something expensive:
+
+| Flag | Meaning |
+|---|---|
+| `Using where` | Filtering rows after fetching. Okay if you have an index, bad if combined with `type: ALL`. |
+| `Using index` | Found everything in the index, didn't need the actual table. Good sign! This is what you want. |
+| `Using filesort` | Sorting in memory instead of using an index. Bad for large result sets. Add an index for your ORDER BY. |
+| `Using temporary` | Created a temp table for GROUP BY or DISTINCT. Slow for big datasets. |
+| `Using join buffer` | Can't do an efficient join, so it's buffering rows. Usually means a missing index on the join key. |
+
+### Real Example
+
+Say we query posts by author and sort by date:
+
+```sql
+EXPLAIN SELECT * FROM posts WHERE author_id = 5 ORDER BY created_at DESC;
+```
+
+Results:
+
+| id | select_type | table | type | possible_keys | key | key_len | rows | Extra |
+|---|---|---|---|---|---|---|---|---|
+| 1 | SIMPLE | posts | ref | idx_author_id | idx_author_id | 8 | 42 | Using filesort |
+
+**What's happening:**
+
+- **✓ Good:** Using index to find the 42 posts by author 5
+- **✗ Bad:** Sorting in memory instead of using an index. Create a composite index on `(author_id, created_at DESC)` and it'll be fast.
+
+<div class="callout tip">
+  <strong class="text-gray-900 dark:text-gray-100">Tip:</strong> Always check for <code>Using filesort</code> and <code>Using temporary</code> in the <code>Extra</code> column. These are often the first optimization targets.
+</div>
+
+## MySQL Indexes
+
+Indexes are how you make your queries fast. Without them, MySQL checks every single row. With them, it can jump straight to what you need.
+
+### How Indexes Work
+
+An index is a sorted copy of your columns. MySQL uses it to find rows instantly instead of reading every row.
+
+Example: 1 million rows, searching for `WHERE id = 5000`:
+
+- **No index:** Read all 1 million rows. Slow.
+- **With index:** Jump straight to row 5000. Super fast.
+
+### Index Types
+
+#### Single-Column Index
+
+Index one column for fast lookups:
+
+```sql
+CREATE INDEX idx_email ON users(email);
+```
+
+Now `WHERE email = '...'` is instant.
+
+#### Composite (Multi-Column) Index
+
+Index multiple columns when you always filter or sort by them together:
+
+```sql
+CREATE INDEX idx_user_date ON orders(user_id, created_at);
+```
+
+These queries will use it:
+
+```sql
+WHERE user_id = 5 AND created_at > '2025-01-01'  -- both columns
+WHERE user_id = 5                                  -- first column
+```
+
+But this won't:
+
+```sql
+WHERE created_at > '2025-01-01'  -- second column only (needs first column)
+```
+
+#### Unique Index
+
+Index that enforces no duplicates (like email or username):
+
+```sql
+CREATE UNIQUE INDEX idx_username ON users(username);
+```
+
+MySQL will block any insert/update that violates uniqueness. You get fast lookups plus data integrity.
+
+#### Covering Index
+
+An index that has all the columns your query needs. MySQL doesn't even need to look at the table—it gets everything from the index:
+
+```sql
+-- Query: SELECT user_id, created_at FROM orders WHERE user_id = 5
+CREATE INDEX idx_user_created ON orders(user_id, created_at);
+```
+
+In EXPLAIN you'll see `Using index`. That's excellent.
+
+#### Prefix Index (for Text Columns)
+
+For long text columns, index just the first few characters:
+
+```sql
+CREATE INDEX idx_email_prefix ON users(email(10));
+```
+
+Saves space and is faster, but be sure the prefix is unique enough.
+
+### Creating and Dropping Indexes
+
+#### CREATE INDEX
+
+```sql
+CREATE INDEX idx_name ON table_name(column1, column2);
+```
+
+#### DROP INDEX
+
+```sql
+DROP INDEX idx_name ON table_name;
+```
+
+#### ALTER TABLE (alternative syntax)
+
+```sql
+ALTER TABLE table_name ADD INDEX idx_name(column1);
+ALTER TABLE table_name DROP INDEX idx_name;
+```
+
+#### Show Existing Indexes
+
+```sql
+SHOW INDEXES FROM table_name;
+```
+
+### When MySQL Uses Indexes
+
+The optimizer uses an index when:
+
+- It exists on a column in your WHERE, ORDER BY, or JOIN
+- You're not doing something that breaks indexes (type mismatch, leading wildcard, functions)
+- It's actually faster than reading the whole table
+
+Sometimes MySQL skips an index if the table is tiny (a few hundred rows) or the index isn't selective.
+
+### Reading Index Info in EXPLAIN
+
+Three columns tell you about index usage:
+
+| Column | Meaning |
+|---|---|
+| `possible_keys` | Which indexes could work. NULL if none available. |
+| `key` | Which index was actually picked. NULL means full table scan. |
+| `key_len` | How many bytes of the index were used. For composite indexes, tells you how many columns were used. |
+
+Example:
+
+```sql
+-- Composite index: idx_user_created(user_id: 8 bytes, created_at: 8 bytes)
+CREATE INDEX idx_user_created ON orders(user_id, created_at);
+
+-- Query 1: uses both columns
+EXPLAIN SELECT * FROM orders WHERE user_id = 5 AND created_at > '2025-01-01';
+-- key_len = 16 (both columns used)
+
+-- Query 2: uses only first column
+EXPLAIN SELECT * FROM orders WHERE user_id = 5;
+-- key_len = 8 (only user_id, because created_at is not in the WHERE clause)
+```
+
+### Composite Index Design
+
+Order matters. A good pattern:
+
+1. **Equality columns first** (columns with `=`)
+2. **Range columns next** (columns with `>`, `<`)
+3. **Sort columns last** (columns in `ORDER BY`)
+
+Example: `WHERE user_id = X AND status = 'active' ORDER BY created_at DESC`
+
+```sql
+CREATE INDEX idx_user_status_date ON orders(user_id, status, created_at);
+```
+
+<div class="callout tip">
+  <strong>Tip:</strong> Don't create too many indexes. Each one slows down inserts and updates. Focus on your most important queries.
+</div>
+
+### Full-Text Indexes
+
+For searching large text fields:
+
+```sql
+CREATE FULLTEXT INDEX idx_body_ft ON posts(body);
+
+SELECT * FROM posts WHERE MATCH(body) AGAINST('mysql' IN BOOLEAN MODE);
+```
+
+Way faster than `LIKE '%keyword%'` on big datasets.
+
+## MySQL Query Optimizer
+
+MySQL has to figure out how to run your query. It tries different ways and picks the fastest one (or at least, what it thinks will be fastest). Let's understand how it thinks so you can write queries it actually likes.
+
+### How the Optimizer Works
+
+When you submit a query, the optimizer:
+
+1. **Parses the query syntax.**
+2. **Checks which indexes are available on the tables involved.**
+3. **Estimates the cost of multiple execution plans** (e.g., which table to scan first, which indexes to use, which join order is cheapest).
+4. **Picks the plan with the lowest estimated cost.**
+5. **Executes that plan.**
+
+The catch? It's all **estimates**. MySQL uses table size and index stats to make a guess. Usually right, but sometimes very wrong.
+
+### Common Mistakes That Confuse the Optimizer
+
+Some patterns make the optimizer give up and do a full scan. Here's what to avoid:
+
+#### 1. Type Mismatch
+
+Searching an INT column with a string kills indexes:
+
+```sql
+-- Bad: passing a string to an INT column
+EXPLAIN SELECT * FROM users WHERE id = '123';
+```
+
+Fix: use the right type
+
+```sql
+-- Good
+EXPLAIN SELECT * FROM users WHERE id = 123;
+```
+
+#### 2. LIKE with Leading %
+
+This kills indexes. Don't do it:
+
+```sql
+-- Bad
+EXPLAIN SELECT * FROM users WHERE email LIKE '%@example.com';
+```
+
+This will be fast:
+
+```sql
+-- Good
+EXPLAIN SELECT * FROM users WHERE email LIKE 'admin%';
+```
+
+#### 3. OR with Unindexed Columns
+
+If one side of OR isn't indexed, MySQL might give up:
+
+```sql
+EXPLAIN SELECT * FROM posts WHERE author_id = 5 OR metadata LIKE '%draft%';
+```
+
+Add an index to the `metadata` column or rewrite the query.
+
+#### 4. Functions on Indexed Columns
+
+Functions on columns kill indexes:
+
+```sql
+-- Bad
+EXPLAIN SELECT * FROM events WHERE YEAR(event_date) = 2025;
+```
+
+Rewrite it:
+
+```sql
+-- Good
+EXPLAIN SELECT * FROM events
+  WHERE event_date >= '2025-01-01'
+    AND event_date < '2026-01-01';
+```
+
+#### 5. Subqueries in WHERE
+
+Subqueries with IN can be slow:
+
+```sql
+EXPLAIN SELECT * FROM orders WHERE user_id IN (
+  SELECT id FROM users WHERE country = 'US'
+);
+```
+
+Use a JOIN instead:
+
+```sql
+EXPLAIN SELECT DISTINCT o.* FROM orders o
+  JOIN users u ON o.user_id = u.id
+  WHERE u.country = 'US';
+```
+
+### Red Flags in EXPLAIN
+
+When your query is slow, look for these:
+
+- **`type: ALL`** — Full table scan. Add an index.
+- **`Using filesort`** — Sorting in memory. Add an index for ORDER BY.
+- **`Using temporary`** — Temp table for GROUP BY. Bad for big data.
+- **`rows` is huge** — Examining way too many rows. Index problem.
+- **`key: NULL`** — No index used. Add one or check for type mismatches.
+
+### Measure Your Fixes
+
+Always run EXPLAIN before and after. Here's an example:
+
+**Before:**
+
+| type | key | rows | Extra |
+|---|---|---|---|
+| ALL | NULL | 1000000 | Using where |
+
+**After creating an index:**
+
+| type | key | rows | Extra |
+|---|---|---|---|
+| ref | idx_user_created | 42 | |
+
+Boom. From 1M rows to 42. That's a massive win.
+
+<div class="callout tip">
+  <strong>Pro tip:</strong> Use <code>EXPLAIN ANALYZE</code> to see real numbers instead of guesses. If they're way off, run <code>ANALYZE TABLE</code> to update MySQL's stats.
+</div>
+
+## Real Optimization Examples
+
+Let's fix some actual slow queries. Diagnose, fix, verify. That's the workflow.
+
+### Scenario: Slow User Feed
+
+A user says the feed page is slow. It shows their posts, newest first. 1M posts, 100k users. Let's find the bottleneck.
+
+<div class="step">
+  <div class="step-number">Step 1: The Slow Query</div>
+  <p>Here's the query that powers the feature:</p>
+
+```sql
+SELECT id, user_id, title, body, created_at
+FROM posts
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;
+```
+</div>
+
+<div class="step">
+  <div class="step-number">Step 2: Diagnose with EXPLAIN</div>
+  <p>Let's see what <code>EXPLAIN</code> shows:</p>
+
+```sql
+EXPLAIN SELECT id, user_id, title, body, created_at
+FROM posts
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+  <p>Output:</p>
+
+| id | select_type | table | type | key | rows | Extra |
+|---|---|---|---|---|---|---|
+| 1 | SIMPLE | posts | ALL | NULL | 1000000 | Using where; Using filesort |
+
+</div>
+
+<div class="step">
+  <div class="step-number">Step 3: The Problems</div>
+  <p><strong>Problem 1: Full table scan</strong> — MySQL reads all 1M rows instead of jumping to the user's posts.</p>
+  <p><strong>Problem 2: Sorting in memory</strong> — After getting all those rows, it sorts them. Expensive.</p>
+
+  <div class="callout warning">
+    <strong>Root cause:</strong> No indexes. Add an index on <code>(user_id, created_at DESC)</code>.
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 4: The Fix</div>
+  <p>
+    Create a composite index on <code>(user_id, created_at DESC)</code>. This index is sorted first by <code>user_id</code>, then by <code>created_at</code> in descending order. Now:
+  </p>
+  <ul>
+    <li>MySQL can quickly find all posts for <code>user_id = 42</code> using the index.</li>
+    <li>Within that user's posts, they're already sorted by <code>created_at DESC</code> (no need to sort).</li>
+    <li>MySQL can fetch the first 20 without sorting the entire result set.</li>
+  </ul>
+
+```sql
+CREATE INDEX idx_user_created_desc ON posts(user_id, created_at DESC);
+```
+
+  <div class="callout note">
+    <strong>Syntax Note:</strong> The <code>DESC</code> keyword in the index definition tells MySQL to store <code>created_at</code> in descending order, matching the query's <code>ORDER BY created_at DESC</code>.
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 5: Verify the Fix</div>
+  <p>Run <code>EXPLAIN</code> again on the same query:</p>
+
+```sql
+EXPLAIN SELECT id, user_id, title, body, created_at
+FROM posts
+WHERE user_id = 42
+ORDER BY created_at DESC
+LIMIT 20;
+```
+
+  <p>New output:</p>
+
+| id | select_type | table | type | key | rows | Extra |
+|---|---|---|---|---|---|---|
+| 1 | SIMPLE | posts | ref | idx_user_created_desc | 25 | |
+
+  <p><strong>Comparison:</strong></p>
+
+| Metric | Before | After |
+|---|---|---|
+| Type | ALL (full scan) | ref (index lookup) |
+| Rows examined | 1,000,000 | ~25 |
+| Filesort? | Yes | No |
+
+</div>
+
+<div class="step">
+  <div class="step-number">Step 6: Key Takeaways</div>
+  <ul>
+    <li>Composite indexes with <code>(filter, sort)</code> kill two birds: no full scan, no filesort.</li>
+    <li><code>type: ALL</code> and <code>Using filesort</code> are your warning signs.</li>
+    <li>One good index dropped this from 1M rows examined to 25. Huge difference.</li>
+    <li>Use DESC in the index if your query sorts descending.</li>
+  </ul>
+
+  <div class="callout tip">
+    <strong>Next level:</strong> If you only need a few columns, add them all to the index (covering index). MySQL won't need the table at all.
+  </div>
+</div>
+
+### Example 2: JOIN Query
+
+<div class="step">
+  <div class="step-number">Step 1: The Problem</div>
+  <p>Show posts with author names, filtered by date:</p>
+
+```sql
+SELECT p.id, p.title, u.name
+FROM posts p
+JOIN users u ON p.user_id = u.id
+WHERE p.created_at >= '2025-01-01'
+ORDER BY p.created_at DESC
+LIMIT 20;
+```
+</div>
+
+<div class="step">
+  <div class="step-number">Step 2: The Bad EXPLAIN</div>
+
+| table | type | rows | Extra |
+|---|---|---|---|
+| posts | ALL | 1000000 | Using where; Using filesort |
+| users | ALL | 100000 | Using where; Using join buffer |
+
+  <p>Ouch. Full scans on both, sorting, and a join buffer (inefficient join). This will be slow.</p>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 3: Add Indexes</div>
+
+```sql
+CREATE INDEX idx_posts_created ON posts(created_at DESC);
+```
+
+  <p>(The users.id already has a PRIMARY KEY, so we don't need another index there.)</p>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 4: EXPLAIN After Indexes</div>
+
+| id | table | type | key | rows | Extra |
+|---|---|---|---|---|---|
+| 1 | posts | range | idx_posts_created | 50000 | |
+| 1 | users | const | PRIMARY | 1 | |
+
+  <p>Much better: posts now use a range scan on the index (filtering by date), and users are looked up via primary key (constant time, once per post row). No filesort, no join buffer.</p>
+</div>
+
+### Advanced Example: Multi-Join Query
+
+A more complex real-world scenario with multiple joins and aggregation.
+
+<div class="step">
+  <div class="step-number">Problem: Find Active Users</div>
+  <p>Find users with 50+ posts AND 3+ comments in the last 30 days, show their total engagement score.</p>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 1: The Slow Query</div>
+
+```sql
+SELECT
+  u.id,
+  u.name,
+  COUNT(DISTINCT p.id) as post_count,
+  COUNT(DISTINCT c.id) as comment_count,
+  SUM(p.likes) as total_likes
+FROM users u
+JOIN posts p ON u.id = p.user_id
+LEFT JOIN comments c ON p.id = c.post_id AND c.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+WHERE p.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+GROUP BY u.id, u.name
+HAVING COUNT(DISTINCT p.id) > 50 AND COUNT(DISTINCT c.id) >= 3
+ORDER BY total_likes DESC
+LIMIT 50;
+```
+</div>
+
+<div class="step">
+  <div class="step-number">Step 2: The Broken EXPLAIN</div>
+
+| table | type | rows |
+|---|---|---|
+| users | ALL | 100000 |
+| posts | ALL | 1000000 |
+| comments | ALL | 5000000 |
+
+  <p><strong>The mess:</strong> Full scans everywhere, join buffers doing heavy lifting, 5M rows examined. This will be painfully slow.</p>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 3: Add Indexes</div>
+
+```sql
+CREATE INDEX idx_posts_user_created ON posts(user_id, created_at DESC);
+CREATE INDEX idx_comments_post_created ON comments(post_id, created_at DESC);
+```
+
+  <p>First index speeds up the posts join and date filter. Second does the same for comments.</p>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 4: The Fixed EXPLAIN</div>
+
+| table | type | rows | Extra |
+|---|---|---|---|
+| posts | ref | 10 | Using where; Using index |
+| comments | ref | 5 | Using where; Using index |
+
+  <p><strong>Much better:</strong> Posts went from 1M to 10 rows. Comments from 5M to 5 rows. No more join buffers. This is a massive win.</p>
+</div>
+
+<div class="step">
+  <div class="step-number">Step 5: Go Even Further</div>
+  <ul>
+    <li><strong>Cache it:</strong> Pre-compute scores in a summary table, update hourly</li>
+    <li><strong>Covering indexes:</strong> Add more columns to the index so MySQL doesn't need the table at all</li>
+    <li><strong>Partition by date:</strong> If you only care about recent data, partition to scan less</li>
+    <li><strong>Rewrite the query:</strong> Filter users first, then join (sometimes smarter than the optimizer)</li>
+  </ul>
+
+  <div class="callout tip">
+    <strong>Pro tip:</strong> Use <code>EXPLAIN ANALYZE</code> to check if estimates match reality. If they're way off, run <code>ANALYZE TABLE</code> to update stats.
+  </div>
+</div>
