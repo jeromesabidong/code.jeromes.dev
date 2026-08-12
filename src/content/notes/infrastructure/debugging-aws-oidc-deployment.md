@@ -62,13 +62,53 @@ The AWS OIDC provider URL must be retrieved from the **GitHub Actions details** 
 
 The key is using the **exact URL from GitHub's configuration**, as this is what GitHub's OIDC server expects.
 
+## Issue 3: CloudFront Doesn't Append index.html for Subdirectory Paths
+
+### Problem
+
+The default root object setting from Issue 1 only handles requests to the site root (`/`). It does **not** apply to subdirectory paths like `/notes/some-post/`, so those requests returned an error instead of serving `/notes/some-post/index.html`, even though the file existed in S3.
+
+### Solution
+
+Use a **CloudFront Function** to rewrite the request URI before it reaches the origin, appending `index.html` when the URI ends in a slash or has no file extension.
+
+**Steps to fix:**
+
+1. In the CloudFront console, go to **CloudFront Functions** and create a new function
+2. Add the URI-rewrite logic (see code below). Name it accordingly.
+
+```js
+function handler(event) {
+  var request = event.request;
+  var uri = request.uri;
+
+  // If the URI ends with a slash, append index.html
+  if (uri.endsWith("/")) {
+    request.uri += "index.html";
+  }
+  // If the URI doesn't have a file extension, append /index.html
+  else if (!uri.includes(".")) {
+    request.uri += "/index.html";
+  }
+
+  return request;
+}
+```
+
+3. Test and publish the function
+4. In the **Publish** tab, under **Associated distributions** select your target distribution
+5. Save changes
+
+This ensures any request for a "directory-style" path resolves to the correct `index.html` in S3, not just the site root.
+
 ## Verification Checklist
 
-- [ ] CloudFront distribution has a default root object set
-- [ ] AWS OIDC provider URL matches GitHub's official provider URL
-- [ ] IAM role has a trust relationship with the correct OIDC provider
-- [ ] IAM role has the necessary permissions for your deployment actions
-- [ ] GitHub Actions workflow uses the correct role ARN
+- CloudFront distribution has a default root object set
+- CloudFront Function for index.html rewriting is attached to the Viewer request event
+- AWS OIDC provider URL matches GitHub's official provider URL
+- IAM role has a trust relationship with the correct OIDC provider
+- IAM role has the necessary permissions for your deployment actions
+- GitHub Actions workflow uses the correct role ARN
 
 ## Related Documentation
 
