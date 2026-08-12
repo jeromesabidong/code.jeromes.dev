@@ -19,7 +19,7 @@ export async function getAllNotes(): Promise<Note[]> {
     description: entry.data.description,
     tags: entry.data.tags,
     date: entry.data.date,
-    href: `/${entry.id}`,
+    href: `/${entry.id}/`,
   }));
 
   return notes.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -84,7 +84,7 @@ export async function getSearchIndex(): Promise<SearchDoc[]> {
     description: entry.data.description,
     category: entry.data.category,
     tags: entry.data.tags,
-    href: `/${entry.id}`,
+    href: `/${entry.id}/`,
     content: plainTextFromSource(entry.body ?? ''),
   }));
 }

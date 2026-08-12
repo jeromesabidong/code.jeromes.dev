@@ -4,7 +4,7 @@ import { CATEGORY_LABELS } from '../lib/categories';
 const pathname = new URL(Astro.request.url).pathname;
 
 const navItems = Object.entries(CATEGORY_LABELS).map(([key, label]) => ({
-  href: `/${key}`,
+  href: `/${key}/`,
   label,
 }));
 ---

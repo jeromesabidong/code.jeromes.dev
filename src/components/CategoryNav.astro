@@ -22,7 +22,7 @@ const isCategoryActive = (category: { key: string }) =>
 <div class="category-nav">
   <span class="nav-eyebrow">Categories</span>
   {categories.map((category) => (
-    <a href={`/${category.key}`} class={`nav-category-link ${isCategoryActive(category) ? 'active' : ''}`}>
+    <a href={`/${category.key}/`} class={`nav-category-link ${isCategoryActive(category) ? 'active' : ''}`}>
       <span class="nav-category-label">{category.label}</span>
       <span class="nav-category-count">{counts[category.key as keyof typeof counts]}</span>
     </a>
