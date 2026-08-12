@@ -47,3 +47,44 @@ export async function getCategoryCounts(): Promise<Record<Category, number>> {
 
   return counts;
 }
+
+export interface SearchDoc {
+  title: string;
+  description: string;
+  category: Category;
+  tags: string[];
+  href: string;
+  content: string;
+}
+
+function plainTextFromSource(source: string): string {
+  return source
+    .replace(/^import .+$/gm, '')
+    .replace(/^export const \w+\s*=\s*[\s\S]*?;\s*$/gm, '')
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/<\/?[A-Z][\w.]*[^>]*>/g, '')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_~]{1,3}/g, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/^\d+\.\s+/gm, '')
+    .replace(/^-{3,}$/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export async function getSearchIndex(): Promise<SearchDoc[]> {
+  const entries = await getCollection('notes', ({ data }) => !data.draft);
+
+  return entries.map((entry) => ({
+    title: entry.data.title,
+    description: entry.data.description,
+    category: entry.data.category,
+    tags: entry.data.tags,
+    href: `/${entry.id}`,
+    content: plainTextFromSource(entry.body ?? ''),
+  }));
+}

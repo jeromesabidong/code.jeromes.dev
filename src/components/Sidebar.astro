@@ -1,6 +1,7 @@
 ---
 import CategoryNav from './CategoryNav.astro';
 import DarkModeToggle from './DarkModeToggle.astro';
+import SearchTrigger from './SearchTrigger.astro';
 import { SITE_TITLE } from '../lib/site';
 ---
 
@@ -9,6 +10,7 @@ import { SITE_TITLE } from '../lib/site';
     {SITE_TITLE}
   </a>
   <div class="flex-1 px-4 py-4">
+    <SearchTrigger />
     <CategoryNav />
   </div>
   <div class="border-t border-gray-300 dark:border-gray-700 px-4 py-4 flex justify-center">

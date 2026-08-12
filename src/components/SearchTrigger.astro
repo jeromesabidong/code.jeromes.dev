@@ -1,0 +1,79 @@
+---
+---
+
+<button type="button" class="search-trigger" data-search-open>
+  <svg class="search-trigger-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+    <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+  </svg>
+  <span>Search notes...</span>
+  <kbd class="search-trigger-kbd">⌘K</kbd>
+</button>
+
+<style>
+  .search-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    margin: 0 0 1rem;
+    padding: 0.55rem 0.75rem;
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    color: #6b7280;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  html.dark .search-trigger {
+    color: #94a3b8;
+    background: rgba(148, 163, 184, 0.06);
+    border-color: #334155;
+  }
+
+  .search-trigger:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+
+  html.dark .search-trigger:hover {
+    background: rgba(148, 163, 184, 0.12);
+    border-color: #475569;
+  }
+
+  .search-trigger-icon {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex-shrink: 0;
+  }
+
+  .search-trigger span {
+    flex: 1;
+    text-align: left;
+  }
+
+  .search-trigger-kbd {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.3rem;
+    background: #e5e7eb;
+    color: #6b7280;
+  }
+
+  html.dark .search-trigger-kbd {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+  }
+</style>
+
+<script>
+  document.querySelectorAll('[data-search-open]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('open-search'));
+    });
+  });
+</script>

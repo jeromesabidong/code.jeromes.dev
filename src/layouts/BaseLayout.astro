@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Sidebar from '../components/Sidebar.astro';
 import MobileNav from '../components/MobileNav.astro';
+import SearchOverlay from '../components/SearchOverlay.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../lib/site';
 
 interface Props {
@@ -43,5 +44,6 @@ const { title, description = SITE_DESCRIPTION } = Astro.props;
         </main>
       </div>
     </div>
+    <SearchOverlay />
   </body>
 </html>
