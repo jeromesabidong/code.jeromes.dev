@@ -1,0 +1,41 @@
+---
+interface Props {
+  tag: string;
+}
+
+const { tag } = Astro.props;
+---
+
+<span class="tag-chip">
+  <span class="tag-hash" aria-hidden="true">#</span>{tag}
+</span>
+
+<style>
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+    font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.32rem 0.7rem;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .tag-hash {
+    opacity: 0.55;
+  }
+
+  html.dark .tag-chip {
+    background: rgba(96, 165, 250, 0.14);
+    color: #93c5fd;
+    border-color: rgba(96, 165, 250, 0.35);
+  }
+</style>

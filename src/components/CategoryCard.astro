@@ -10,6 +10,7 @@ interface Props {
 const { category, label, description, count, href } = Astro.props;
 
 const CALL_NUMBERS: Record<string, string> = {
+  projects: 'PROJ–00',
   backend: 'BACK–01',
   infrastructure: 'INFR–02',
   database: 'DATA–03',
@@ -19,6 +20,7 @@ const CALL_NUMBERS: Record<string, string> = {
 };
 
 const TAB_ACCENTS: Record<string, 'red' | 'teal' | 'gold'> = {
+  projects: 'teal',
   backend: 'red',
   infrastructure: 'teal',
   database: 'gold',

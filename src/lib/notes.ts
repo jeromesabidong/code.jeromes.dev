@@ -33,6 +33,7 @@ export async function getNotesByCategory(category: Category): Promise<Note[]> {
 export async function getCategoryCounts(): Promise<Record<Category, number>> {
   const allNotes = await getAllNotes();
   const counts: Record<Category, number> = {
+    projects: 0,
     backend: 0,
     infrastructure: 0,
     database: 0,

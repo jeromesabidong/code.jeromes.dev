@@ -5,6 +5,7 @@ import { getCategoryCounts } from '../lib/notes';
 const pathname = new URL(Astro.request.url).pathname;
 
 const categories = [
+  { key: 'projects', label: CATEGORY_LABELS.projects },
   { key: 'backend', label: CATEGORY_LABELS.backend },
   { key: 'infrastructure', label: CATEGORY_LABELS.infrastructure },
   { key: 'database', label: CATEGORY_LABELS.database },
