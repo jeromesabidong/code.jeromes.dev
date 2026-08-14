@@ -27,7 +27,7 @@ jobs:
       - run: pnpm run build
         env:
           SITE_URL: ${{ vars.SITE_URL }}
-          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
+          PUBLIC_GA_ID: ${{ vars.PUBLIC_GA_ID }}
 
       - name: Check for broken links
         uses: lycheeverse/lychee-action@v2
