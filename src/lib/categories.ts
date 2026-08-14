@@ -1,4 +1,4 @@
-export const CATEGORIES = ['projects', 'backend', 'infrastructure', 'database', 'frontend', 'leadership', 'others'] as const;
+export const CATEGORIES = ['projects', 'backend', 'infrastructure', 'database', 'frontend', 'leadership', 'coding'] as const;
 export type Category = (typeof CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -8,7 +8,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   database: 'Database',
   frontend: 'Frontend',
   leadership: 'Leadership',
-  others: 'Others',
+  coding: 'Coding',
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
@@ -18,5 +18,5 @@ export const CATEGORY_DESCRIPTIONS: Record<Category, string> = {
   database: 'Database design, SQL optimization, indexing, and data management',
   frontend: 'Web UI, component design, CSS, JavaScript, and frontend frameworks',
   leadership: 'Team management, mentoring, decision-making, and organizational growth',
-  others: 'Miscellaneous notes and quick references',
+  coding: 'Other coding-related concepts, tools, and quick references',
 };

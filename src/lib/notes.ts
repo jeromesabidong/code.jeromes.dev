@@ -39,7 +39,7 @@ export async function getCategoryCounts(): Promise<Record<Category, number>> {
     database: 0,
     frontend: 0,
     leadership: 0,
-    others: 0,
+    coding: 0,
   };
 
   allNotes.forEach((note) => {

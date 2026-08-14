@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import NoteCard from '../../components/NoteCard.astro';
 import ViewToggle from '../../components/ViewToggle.astro';
+import type { Category } from '../../lib/categories';
 import { CATEGORIES, CATEGORY_LABELS, CATEGORY_DESCRIPTIONS } from '../../lib/categories';
 import { getNotesByCategory } from '../../lib/notes';
 
@@ -11,10 +12,10 @@ export async function getStaticPaths() {
   }));
 }
 
-const { category } = Astro.params;
-const categoryLabel = CATEGORY_LABELS[category as any];
-const categoryDescription = CATEGORY_DESCRIPTIONS[category as any];
-const notes = await getNotesByCategory(category as any);
+const category = Astro.params.category as Category;
+const categoryLabel = CATEGORY_LABELS[category];
+const categoryDescription = CATEGORY_DESCRIPTIONS[category];
+const notes = await getNotesByCategory(category);
 ---
 
 <BaseLayout title={categoryLabel} description={categoryDescription}>
