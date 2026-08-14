@@ -57,7 +57,7 @@ args: >-
   dist
 ```
 
-This keeps real external links (docs, third-party sites) checked over the network, while self-referential links resolve against the build that's about to be deployed — the only version of the site that check can actually validate.
+Real external links (docs, third-party sites) still get checked over the network, while self-referential links resolve against the build that's about to be deployed.
 
 ## Verification Checklist
 

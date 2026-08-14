@@ -60,7 +60,7 @@ The AWS OIDC provider URL must be retrieved from the **GitHub Actions details** 
    - **Audience:** `sts.amazonaws.com`
 6. Use this provider when creating an IAM role that GitHub Actions can assume
 
-The key is using the **exact URL from GitHub's configuration**, as this is what GitHub's OIDC server expects.
+Use the **exact URL from GitHub's configuration** — GitHub's OIDC server checks it precisely.
 
 ## Issue 3: CloudFront Doesn't Append index.html for Subdirectory Paths
 

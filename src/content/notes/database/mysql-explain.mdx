@@ -444,7 +444,7 @@ Always run EXPLAIN before and after. Here's an example:
 |---|---|---|---|
 | ref | idx_user_created | 42 | |
 
-Boom. From 1M rows to 42. That's a massive win.
+Boom. From 1M rows to 42.
 
 <div class="callout tip">
   <strong>Pro tip:</strong> Use <code>EXPLAIN ANALYZE</code> to see real numbers instead of guesses. If they're way off, run <code>ANALYZE TABLE</code> to update MySQL's stats.
@@ -493,8 +493,8 @@ LIMIT 20;
 
 <div class="step">
   <div class="step-number">Step 3: The Problems</div>
-  <p><strong>Problem 1: Full table scan</strong> — MySQL reads all 1M rows instead of jumping to the user's posts.</p>
-  <p><strong>Problem 2: Sorting in memory</strong> — After getting all those rows, it sorts them. Expensive.</p>
+  <p><strong>Problem 1: Full table scan.</strong> MySQL reads all 1M rows instead of jumping to the user's posts.</p>
+  <p><strong>Problem 2: Sorting in memory.</strong> After getting all those rows, it has to sort them. Expensive.</p>
 
   <div class="callout warning">
     <strong>Root cause:</strong> No indexes. Add an index on <code>(user_id, created_at DESC)</code>.
@@ -608,7 +608,7 @@ CREATE INDEX idx_posts_created ON posts(created_at DESC);
 | 1 | posts | range | idx_posts_created | 50000 | |
 | 1 | users | const | PRIMARY | 1 | |
 
-  <p>Much better: posts now use a range scan on the index (filtering by date), and users are looked up via primary key (constant time, once per post row). No filesort, no join buffer.</p>
+  <p>Posts now use a range scan on the index (filtering by date), and users are looked up via primary key (constant time, once per post row). No filesort, no join buffer.</p>
 </div>
 
 ### Advanced Example: Multi-Join Query
@@ -672,7 +672,7 @@ CREATE INDEX idx_comments_post_created ON comments(post_id, created_at DESC);
 | posts | ref | 10 | Using where; Using index |
 | comments | ref | 5 | Using where; Using index |
 
-  <p><strong>Much better:</strong> Posts went from 1M to 10 rows. Comments from 5M to 5 rows. No more join buffers. This is a massive win.</p>
+  <p>Posts went from 1M to 10 rows. Comments from 5M to 5 rows. No more join buffers.</p>
 </div>
 
 <div class="step">
