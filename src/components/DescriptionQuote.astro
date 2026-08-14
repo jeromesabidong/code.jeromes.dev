@@ -1,0 +1,21 @@
+---
+interface Props {
+  description: string;
+}
+
+const { description } = Astro.props;
+---
+
+<blockquote class="description-quote">
+  <p>{description}</p>
+</blockquote>
+
+<style>
+  .description-quote {
+    @apply border-l-4 border-gray-300 dark:border-gray-700 pl-4 mb-8 italic text-gray-600 dark:text-gray-400;
+  }
+
+  .description-quote p {
+    @apply mb-0 leading-relaxed;
+  }
+</style>
